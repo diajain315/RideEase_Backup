@@ -1,770 +1,7 @@
-
-
-// import React, { useEffect, useState } from "react";
-// import { Collapse, Input } from "antd";
-// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-// import {
-//   faPersonCircleQuestion,
-//   faInfoCircle,
-//   faFileContract,
-//   faWallet,
-//   faMapMarkedAlt,
-//   faUserShield,
-// } from "@fortawesome/free-solid-svg-icons";
-
-// const { Panel } = Collapse;
-// const { Search } = Input;
-
-// const FAQS = () => {
-//   const [animate, setAnimate] = useState(false);
-//   const [searchTerm, setSearchTerm] = useState("");
-
-//   const faqCategoriesWithIcons = [
-//     {
-//       category: "General",
-//       icon: faInfoCircle,
-//       questions: [
-//         {
-//           question: "What is Bike-4-Rent?",
-//           answer:
-//             "Bike-4-Rent is a premium two-wheeler rental service that allows you to rent bikes with ease across the city.",
-//         },
-//         {
-//           question: "What makes us special?",
-//           answer:
-//             "We offer assured quality bikes, lowest prices, flexible rental options, and excellent customer support.",
-//         },
-//         {
-//           question: "How does Bike-4-Rent work?",
-//           answer:
-//             "You choose your bike, select dates, upload necessary documents, and pick up your ride at the designated location.",
-//         },
-//       ],
-//     },
-//     {
-//       category: "Rental Policy",
-//       icon: faFileContract,
-//       questions: [
-//         {
-//           question: "What documents need to be uploaded?",
-//           answer: "You will need a valid driver’s license and a government-issued ID proof.",
-//         },
-//         {
-//           question: "Is fuel included in the tariff?",
-//           answer: "No, fuel charges are not included in the rental tariff. The vehicle will be provided with minimal fuel.",
-//         },
-//         {
-//           question: "Is there any limit on the number of kilometres?",
-//           answer:
-//             "No, we offer unlimited kilometres with our rentals unless specified otherwise.",
-//         },
-//         {
-//           question: "Do I have to pay a deposit?",
-//           answer: "Yes, a refundable deposit is required at the time of booking.",
-//         },
-//         {
-//           question: "When can we expect the refund?",
-//           answer:
-//             "Refunds are processed within 24-48 hours after you return the bike.",
-//         },
-//         {
-//           question: "Is there any penalty for late return?",
-//           answer:
-//             "Yes, late returns will incur additional charges as per the company policy.",
-//         },
-//       ],
-//     },
-//     {
-//       category: "Booking & Cancellation",
-//       icon: faWallet,
-//       questions: [
-//         {
-//           question: "How do I cancel my booking?",
-//           answer:
-//             "You can cancel via your dashboard or contact our customer support team.",
-//         },
-//         {
-//           question: "What is the cancellation policy?",
-//           answer:
-//             "Cancellations made 24 hours before the booking time will get a full refund.",
-//         },
-//       ],
-//     },
-//     {
-//       category: "Pickup & Drop",
-//       icon: faMapMarkedAlt,
-//       questions: [
-//         {
-//           question: "Who should I contact to pick up the vehicle and how?",
-//           answer:
-//             "Our local partner details will be provided post booking confirmation.",
-//         },
-//         {
-//           question: "Can I pick and drop the vehicle at different locations?",
-//           answer:
-//             "Yes, this option is available with extra fees for selected cities.",
-//         },
-//       ],
-//     },
-//     {
-//       category: "Eligibility",
-//       icon: faUserShield,
-//       questions: [
-//         {
-//           question: "Is there any limit on the age of the rider?",
-//           answer:
-//             "Yes, the rider must be at least 18 years old and hold a valid driving license.",
-//         },
-//       ],
-//     },
-//   ];
-
-//   useEffect(() => {
-//     const timer = setTimeout(() => setAnimate(true), 300);
-//     return () => clearTimeout(timer);
-//   }, []);
-
-//   const filteredFaqs = faqCategoriesWithIcons
-//     .map((section) => ({
-//       ...section,
-//       questions: section.questions.filter((q) =>
-//         q.question.toLowerCase().includes(searchTerm.toLowerCase())
-//       ),
-//     }))
-//     .filter((section) => section.questions.length > 0);
-
-//   return (
-//     <section
-//       className={`max-w-7xl px-4 py-10 mx-auto transform transition-all duration-700 grid grid-cols-1 lg:grid-cols-3 gap-8 ${
-//         animate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-//       }`}
-//     >
-//       {/* FAQ Section */}
-//       <div className="lg:col-span-2">
-//         <div className="text-center pt-8 pb-8 flex flex-col items-center space-y-4 p-6 rounded-lg shadow-lg bg-[#fff7f0]">
-//           <h2 className="text-4xl font-extrabold tracking-tight text-orange-900">
-//             <FontAwesomeIcon
-//               icon={faPersonCircleQuestion}
-//               className="text-orange-800 mr-2"
-//             />
-//             Have Questions?
-//           </h2>
-//           <p className="text-[#5a4239] text-lg mt-2">
-//             Explore Our FAQs for Quick Help.
-//           </p>
-//           <div className="w-full max-w-md mt-4">
-//             <Search
-//               placeholder="Search FAQs"
-//               onChange={(e) => setSearchTerm(e.target.value)}
-//               enterButton
-//             />
-//           </div>
-//         </div>
-
-//         {filteredFaqs.map((section, idx) => (
-//           <div key={idx} className="mt-6">
-//             <h3 className="text-2xl font-semibold text-slate-800 mb-4 flex items-center gap-3">
-//               <FontAwesomeIcon
-//                 icon={section.icon}
-//                 className="text-orange-800"
-//               />
-//               {section.category}
-//             </h3>
-//             <Collapse
-//               accordion
-//               bordered={false}
-//               className="faq-collapse bg-[#fff7f0] rounded-lg shadow-md"
-//               expandIconPosition="right"
-//             >
-//               {section.questions.map((item, qIdx) => (
-//                 <Panel
-//                   header={item.question}
-//                   key={qIdx}
-//                   className="hover:bg-orange-100 transition duration-300"
-//                 >
-//                   <p className="text-slate-700">{item.answer}</p>
-//                 </Panel>
-//               ))}
-//             </Collapse>
-//           </div>
-//         ))}
-//       </div>
-
-//       {/* Side Panel */}
-//       <aside className="space-y-8">
-//         {/* Promotional Offers */}
-//         <div className="p-6 bg-[#fdf3e6] rounded-lg shadow-lg">
-//           <h3 className="text-2xl font-bold text-orange-900 mb-4">Promotional Offers</h3>
-//           <ul className="list-disc pl-5 space-y-2 text-slate-700">
-//             <li>Get 20% off on weekend bookings!</li>
-//             <li>Flat ₹100 cashback on your first rental.</li>
-//             <li>Refer a friend and earn ₹200 credits.</li>
-//           </ul>
-//         </div>
-
-//         {/* Recent Updates */}
-//         <div className="p-6 bg-[#fdf3e6] rounded-lg shadow-lg">
-//           <h3 className="text-2xl font-bold text-orange-900 mb-4">Recent Updates</h3>
-//           <ul className="space-y-2 text-slate-700">
-//             <li>New bike models added to our fleet!</li>
-//             <li>Extended rental hours for night riders.</li>
-//             <li>Now available in 3 more cities: Pune, Jaipur, and Hyderabad.</li>
-//           </ul>
-//         </div>
-
-//         {/* How It Works */}
-//         <div className="p-6 bg-[#fdf3e6] rounded-lg shadow-lg">
-//           <h3 className="text-2xl font-bold text-orange-900 mb-4">How It Works</h3>
-//           <ol className="list-decimal pl-5 space-y-2 text-slate-700">
-//             <li>Select your preferred bike from our catalog.</li>
-//             <li>Choose your rental dates and upload documents.</li>
-//             <li>Complete payment and pick up your bike.</li>
-//             <li>Enjoy your ride and return it at the scheduled time.</li>
-//           </ol>
-//         </div>
-
-        
-// <div className="p-6 bg-[#fdf3e6] rounded-lg shadow-lg mt-4">
-//   <h3 className="text-2xl font-bold text-orange-900 mb-4">Travel Tips</h3>
-//   <ul className="list-disc pl-5 space-y-2 text-slate-700">
-//     <li>Plan your route in advance to avoid last-minute confusion.</li>
-//     <li>Carry a valid ID and necessary documents at all times.</li>
-//     <li>Always wear a helmet and ensure your safety gear is in place.</li>
-//     <li>Check the weather forecast before heading out.</li>
-//     <li>Keep emergency contact numbers handy.</li>
-//     <li>Pack essentials like water, snacks, and a first-aid kit.</li>
-//     <li>Respect local traffic laws and regulations.</li>
-//   </ul>
-// </div>
-//       </aside>
-//     </section>
-//   );
-// };
-
-// export default FAQS;
-
-// import React, { useEffect, useState } from "react";
-// import { Collapse, Input } from "antd";
-// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-// import { SearchOutlined } from '@ant-design/icons';
-
-// import {
-//   faPersonCircleQuestion,
-//   faInfoCircle,
-//   faFileContract,
-//   faWallet,
-//   faMapMarkedAlt,
-//   faUserShield,
-// } from "@fortawesome/free-solid-svg-icons";
-
-// const { Panel } = Collapse;
-// const { Search } = Input;
-
-// const FAQS = () => {
-//   const [animate, setAnimate] = useState(false);
-//   const [searchTerm, setSearchTerm] = useState("");
-
-//   const faqCategoriesWithIcons = [
-//     {
-//       category: "General",
-//       icon: faInfoCircle,
-//       questions: [
-//         {
-//           question: "What is Bike-4-Rent?",
-//           answer:
-//             "Bike-4-Rent is a premium two-wheeler rental service that allows you to rent bikes with ease across the city.",
-//         },
-//         {
-//           question: "What makes us special?",
-//           answer:
-//             "We offer assured quality bikes, lowest prices, flexible rental options, and excellent customer support.",
-//         },
-//         {
-//           question: "How does Bike-4-Rent work?",
-//           answer:
-//             "You choose your bike, select dates, upload necessary documents, and pick up your ride at the designated location.",
-//         },
-//       ],
-//     },
-//     {
-//       category: "Rental Policy",
-//       icon: faFileContract,
-//       questions: [
-//         {
-//           question: "What documents need to be uploaded?",
-//           answer: "You will need a valid driver’s license and a government-issued ID proof.",
-//         },
-//         {
-//           question: "Is fuel included in the tariff?",
-//           answer: "No, fuel charges are not included in the rental tariff. The vehicle will be provided with minimal fuel.",
-//         },
-//         {
-//           question: "Is there any limit on the number of kilometres?",
-//           answer:
-//             "No, we offer unlimited kilometres with our rentals unless specified otherwise.",
-//         },
-//         {
-//           question: "Do I have to pay a deposit?",
-//           answer: "Yes, a refundable deposit is required at the time of booking.",
-//         },
-//         {
-//           question: "When can we expect the refund?",
-//           answer:
-//             "Refunds are processed within 24-48 hours after you return the bike.",
-//         },
-//         {
-//           question: "Is there any penalty for late return?",
-//           answer:
-//             "Yes, late returns will incur additional charges as per the company policy.",
-//         },
-//       ],
-//     },
-//     {
-//       category: "Booking & Cancellation",
-//       icon: faWallet,
-//       questions: [
-//         {
-//           question: "How do I cancel my booking?",
-//           answer:
-//             "You can cancel via your dashboard or contact our customer support team.",
-//         },
-//         {
-//           question: "What is the cancellation policy?",
-//           answer:
-//             "Cancellations made 24 hours before the booking time will get a full refund.",
-//         },
-//       ],
-//     },
-//     {
-//       category: "Pickup & Drop",
-//       icon: faMapMarkedAlt,
-//       questions: [
-//         {
-//           question: "Who should I contact to pick up the vehicle and how?",
-//           answer:
-//             "Our local partner details will be provided post booking confirmation.",
-//         },
-//         {
-//           question: "Can I pick and drop the vehicle at different locations?",
-//           answer:
-//             "Yes, this option is available with extra fees for selected cities.",
-//         },
-//       ],
-//     },
-//     {
-//       category: "Eligibility",
-//       icon: faUserShield,
-//       questions: [
-//         {
-//           question: "Is there any limit on the age of the rider?",
-//           answer:
-//             "Yes, the rider must be at least 18 years old and hold a valid driving license.",
-//         },
-//       ],
-//     },
-//   ];
-
-//   useEffect(() => {
-//     const timer = setTimeout(() => setAnimate(true), 300);
-//     return () => clearTimeout(timer);
-//   }, []);
-
-//   const filteredFaqs = faqCategoriesWithIcons
-//     .map((section) => ({
-//       ...section,
-//       questions: section.questions.filter((q) =>
-//         q.question.toLowerCase().includes(searchTerm.toLowerCase())
-//       ),
-//     }))
-//     .filter((section) => section.questions.length > 0);
-
-//   return (
-//     <div className="mt-10 bg-gradient-to-r from-[#fff7f0] to-[#fde9dc] min-h-screen">
-//     <section
-//       className={`max-w-7xl px-4 py-10 mx-auto transform transition-all duration-700 grid grid-cols-1 lg:grid-cols-3 gap-8 ${
-//         animate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-//       }`}
-//     >
-//       {/* FAQ Section */}
-//       <div className="lg:col-span-2">
-//         <div className="text-center pt-8 pb-8 flex flex-col items-center space-y-4 p-6 rounded-lg shadow-lg bg-[#fff7f0]">
-//           <h2 className="text-4xl font-extrabold tracking-tight text-orange-900">
-//             <FontAwesomeIcon
-//               icon={faPersonCircleQuestion}
-//               className="text-orange-800 mr-2"
-//             />
-//             Have Questions?
-//           </h2>
-//           <p className="text-[#5a4239] text-lg mt-2">
-//             Explore Our FAQs for Quick Help.
-//           </p>
-//           <div className="w-full max-w-md mt-4">
-//             <Search
-//               placeholder="Search FAQs"
-//               onChange={(e) => setSearchTerm(e.target.value)}
-              
-//               className="hover:border-orange-900 focus:border-orange-600  focus:ring focus:ring-orange-300 transition duration-300 transition duration-300"
-//             />
-//           </div>
-//         </div>
-
-//         {filteredFaqs.map((section, idx) => (
-//           <div key={idx} className="mt-6">
-//             <h3 className="text-2xl font-semibold text-slate-800 mb-4 flex items-center gap-3">
-//               <FontAwesomeIcon
-//                 icon={section.icon}
-//                 className="text-orange-800"
-//               />
-//               {section.category}
-//             </h3>
-//             <Collapse
-//               accordion
-//               bordered={false}
-//               className="faq-collapse bg-[#fff7f0] rounded-lg shadow-md"
-//               expandIconPosition="right"
-//             >
-//               {section.questions.map((item, qIdx) => (
-//                 <Panel
-//                   header={item.question}
-//                   key={qIdx}
-//                   className="hover:bg-orange-100 transition duration-300"
-//                 >
-//                   <p className="text-slate-700">{item.answer}</p>
-//                 </Panel>
-//               ))}
-//             </Collapse>
-//           </div>
-//         ))}
-//       </div>
-
-//       {/* Side Panel */}
-//       <aside className="space-y-8">
-//         {/* Promotional Offers */}
-//         <div className="p-6 bg-[#fdf3e6] rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-2 transition duration-300">
-//   <h3 className="text-2xl font-bold text-orange-900 mb-4">Promotional Offers</h3>
-//   <ul className="list-disc pl-5 space-y-2 text-slate-700">
-//     <li>Get 20% off on weekend bookings!</li>
-//     <li>Flat ₹100 cashback on your first rental.</li>
-//     <li>Refer a friend and earn ₹200 credits.</li>
-//   </ul>
-// </div>
-
-//         {/* Recent Updates */}
-//         <div className="p-6 bg-[#fdf3e6] rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-2 transition duration-300">
-//   <h3 className="text-2xl font-bold text-orange-900 mb-4">Recent Updates</h3>
-//   <ul className="space-y-2 text-slate-700">
-//     <li>New bike models added to our fleet!</li>
-//     <li>Extended rental hours for night riders.</li>
-//     <li>Now available in 3 more cities: Pune, Jaipur, and Hyderabad.</li>
-//   </ul>
-// </div>
-
-
-//         {/* How It Works */}
-//         <div className="p-6 bg-[#fdf3e6] rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-2 transition duration-300">
-//   <h3 className="text-2xl font-bold text-orange-900 mb-4">How It Works</h3>
-//   <ol className="list-decimal pl-5 space-y-2 text-slate-700">
-//     <li>Select your preferred bike from our catalog.</li>
-//     <li>Choose your rental dates and upload documents.</li>
-//     <li>Complete payment and pick up your bike.</li>
-//     <li>Enjoy your ride and return it at the scheduled time.</li>
-//   </ol>
-// </div>
-
-
-//         {/* Travel Tips */}
-//         <div className="p-6 bg-[#fdf3e6] rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-2 transition duration-300">
-//   <h3 className="text-2xl font-bold text-orange-900 mb-4">Travel Tips</h3>
-//   <ul className="list-disc pl-5 space-y-2 text-slate-700">
-//     <li>Plan your route in advance to avoid last-minute confusion.</li>
-//     <li>Carry a valid ID and necessary documents at all times.</li>
-//     <li>Always wear a helmet and ensure your safety gear is in place.</li>
-//     <li>Check the weather forecast before heading out.</li>
-//     <li>Keep emergency contact numbers handy.</li>
-//     <li>Pack essentials like water, snacks, and a first-aid kit.</li>
-//     <li>Respect local traffic laws and regulations.</li>
-//   </ul>
-// </div>
-
-//       </aside>
-//     </section>
-//     </div>
-//   );
-// };
-
-// export default FAQS;
-
-// import React, { useEffect, useState } from "react";
-// import { Collapse, Input } from "antd";
-// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-// import { SearchOutlined } from '@ant-design/icons';
-
-// import {
-//   faPersonCircleQuestion,
-//   faInfoCircle,
-//   faFileContract,
-//   faWallet,
-//   faMapMarkedAlt,
-//   faUserShield,
-//   faGift,
-//   faBell,
-//   faCogs,
-//   faMapSigns,
-// } from "@fortawesome/free-solid-svg-icons";
-
-// const { Panel } = Collapse;
-// const { Search } = Input;
-
-// const FAQS = () => {
-//   const [animate, setAnimate] = useState(false);
-//   const [searchTerm, setSearchTerm] = useState("");
-
-//   const faqCategoriesWithIcons = [
-//     {
-//       category: "General",
-//       icon: faInfoCircle,
-//       questions: [
-//         {
-//           question: "What is Bike-4-Rent?",
-//           answer:
-//             "Bike-4-Rent is a premium two-wheeler rental service that allows you to rent bikes with ease across the city.",
-//         },
-//         {
-//           question: "What makes us special?",
-//           answer:
-//             "We offer assured quality bikes, lowest prices, flexible rental options, and excellent customer support.",
-//         },
-//         {
-//           question: "How does Bike-4-Rent work?",
-//           answer:
-//             "You choose your bike, select dates, upload necessary documents, and pick up your ride at the designated location.",
-//         },
-//       ],
-//     },
-//     {
-//       category: "Rental Policy",
-//       icon: faFileContract,
-//       questions: [
-//         {
-//           question: "What documents need to be uploaded?",
-//           answer: "You will need a valid driver’s license and a government-issued ID proof.",
-//         },
-//         {
-//           question: "Is fuel included in the tariff?",
-//           answer: "No, fuel charges are not included in the rental tariff. The vehicle will be provided with minimal fuel.",
-//         },
-//         {
-//           question: "Is there any limit on the number of kilometres?",
-//           answer:
-//             "No, we offer unlimited kilometres with our rentals unless specified otherwise.",
-//         },
-//         {
-//           question: "Do I have to pay a deposit?",
-//           answer: "Yes, a refundable deposit is required at the time of booking.",
-//         },
-//         {
-//           question: "When can we expect the refund?",
-//           answer:
-//             "Refunds are processed within 24-48 hours after you return the bike.",
-//         },
-//         {
-//           question: "Is there any penalty for late return?",
-//           answer:
-//             "Yes, late returns will incur additional charges as per the company policy.",
-//         },
-//       ],
-//     },
-//     {
-//       category: "Booking & Cancellation",
-//       icon: faWallet,
-//       questions: [
-//         {
-//           question: "How do I cancel my booking?",
-//           answer:
-//             "You can cancel via your dashboard or contact our customer support team.",
-//         },
-//         {
-//           question: "What is the cancellation policy?",
-//           answer:
-//             "Cancellations made 24 hours before the booking time will get a full refund.",
-//         },
-//       ],
-//     },
-//     {
-//       category: "Pickup & Drop",
-//       icon: faMapMarkedAlt,
-//       questions: [
-//         {
-//           question: "Who should I contact to pick up the vehicle and how?",
-//           answer:
-//             "Our local partner details will be provided post booking confirmation.",
-//         },
-//         {
-//           question: "Can I pick and drop the vehicle at different locations?",
-//           answer:
-//             "Yes, this option is available with extra fees for selected cities.",
-//         },
-//       ],
-//     },
-//     {
-//       category: "Eligibility",
-//       icon: faUserShield,
-//       questions: [
-//         {
-//           question: "Is there any limit on the age of the rider?",
-//           answer:
-//             "Yes, the rider must be at least 18 years old and hold a valid driving license.",
-//         },
-//       ],
-//     },
-//   ];
-
-//   useEffect(() => {
-//     const timer = setTimeout(() => setAnimate(true), 300);
-//     return () => clearTimeout(timer);
-//   }, []);
-
-//   const filteredFaqs = faqCategoriesWithIcons
-//     .map((section) => ({
-//       ...section,
-//       questions: section.questions.filter((q) =>
-//         q.question.toLowerCase().includes(searchTerm.toLowerCase())
-//       ),
-//     }))
-//     .filter((section) => section.questions.length > 0);
-
-//   return (
-//     <div className="mt-10 bg-gradient-to-r from-[#fff7f0] to-[#fde9dc] min-h-screen">
-//       <section
-//         className={`max-w-7xl px-4 py-10 mx-auto transform transition-all duration-700 grid grid-cols-1 lg:grid-cols-3 gap-8 ${
-//           animate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-//         }`}
-//       >
-//         <div className="lg:col-span-2">
-//         <div
-//   className={`text-center pt-8 pb-8 transform transition-all duration-700 ${
-//     animate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-//   } flex flex-col items-center space-y-4 p-6 rounded-lg shadow-lg`}
-// >
-            
-//             <h2 className="text-4xl font-extrabold tracking-tight text-orange-900">
-//               <FontAwesomeIcon
-//                 icon={faPersonCircleQuestion}
-//                 className="text-orange-800 mr-2"
-//               />
-//               Have Questions?
-//             </h2>
-//             <p className={`text-[#5a4239] text-lg mt-2 transition-all duration-700 ${
-//       animate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-//     }`}>
-//               Explore Our FAQs for Quick Help.
-//             </p>
-//             <div className="w-full max-w-md mt-4">
-//               <Search
-//                 placeholder="Search FAQs"
-//                 onChange={(e) => setSearchTerm(e.target.value)}
-//                 className="hover:border-[#733F30] focus:border-[#A15E48] focus:ring focus:ring-orange-300 transition duration-300"
-//               />
-//             </div>
-//           </div>
-//           <div
-//           className={`${
-//             animate ? "translate-x-0 opacity-100" : "-translate-x-10 opacity-0"
-//           } transform transition-all duration-700 ease-out`}
-//         >
-//           {filteredFaqs.map((section, idx) => (
-//             <div key={idx} className="mt-6">
-//               <h3 className="text-2xl font-semibold text-[#733F30] mb-4 flex items-center gap-3">
-//                 <FontAwesomeIcon
-//                   icon={section.icon}
-//                   className="text-orange-800"
-//                 />
-//                 {section.category}
-//               </h3>
-//               <Collapse
-//                 accordion
-//                 bordered={false}
-//                 className="faq-collapse bg-[#fff7f0] rounded-lg shadow-md"
-//                 expandIconPosition="right"
-//               >
-//                 {section.questions.map((item, qIdx) => (
-//                   <Panel
-//                     header={item.question}
-//                     key={qIdx}
-//                     className="hover:bg-[#F0C8B0] transition duration-300"
-//                   >
-//                     <p className="text-[#5a4239]">{item.answer}</p>
-//                   </Panel>
-//                 ))}
-//               </Collapse>
-//             </div>
-//           ))}</div>
-//         </div>
-
-//         <aside className="space-y-8">
-//         <div
-//           className={`${
-//             animate ? "translate-x-0 opacity-100" : "translate-x-10 opacity-0"
-//           } transform transition-all duration-700 ease-out flex flex-col justify-center space-y-4`}
-//         >
-//           <div className="p-6 bg-[#F0C8B0]  rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-2 transition duration-400">
-//             <h3 className="text-2xl font-bold text-[#8B4D3A] mb-4">
-//             <FontAwesomeIcon icon={faGift} className="text-orange-800 mr-2" />Promotional Offers</h3>
-//             <ul className="list-disc pl-5 space-y-2 text-[#5a4239]">
-//               <li>Get 20% off on weekend bookings!</li>
-//               <li>Flat ₹100 cashback on your first rental.</li>
-//               <li>Refer a friend and earn ₹200 credits.</li>
-//             </ul>
-//           </div>
-
-//           <div className="p-6 bg-[#F0C8B0] rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-2 transition duration-400">
-//             <h3 className="text-2xl font-bold text-[#8B4D3A] mb-4">
-//             <FontAwesomeIcon icon={faBell} className="text-orange-800 mr-2" />Recent Updates</h3>
-//             <ul className="space-y-2 text-[#5a4239]">
-//               <li>New bike models added to our fleet!</li>
-//               <li>Extended rental hours for night riders.</li>
-//               <li>Now available in 3 more cities: Pune, Jaipur, and Hyderabad.</li>
-//             </ul>
-//           </div>
-
-//           <div className="p-6 bg-[#F0C8B0] rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-2 transition duration-400">
-//             <h3 className="text-2xl font-bold text-[#8B4D3A] mb-4">
-//             <FontAwesomeIcon icon={faCogs} className="text-orange-800 mr-2" />How It Works</h3>
-//             <ol className="list-decimal pl-5 space-y-2 text-[#5a4239]">
-//               <li>Select your preferred bike from our catalog.</li>
-//               <li>Choose your rental dates and upload documents.</li>
-//               <li>Complete payment and pick up your bike.</li>
-//               <li>Enjoy your ride and return it at the scheduled time.</li>
-//             </ol>
-//           </div>
-
-//           <div className="p-6 bg-[#F0C8B0] rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-2 transition duration-400">
-//             <h3 className="text-2xl font-bold text-[#8B4D3A] mb-4">
-//             <FontAwesomeIcon icon={faMapSigns} className="text-orange-800 mr-2" />Travel Tips</h3>
-//             <ul className="list-disc pl-5 space-y-2 text-[#5a4239]">
-//               <li>Plan your route in advance to avoid last-minute confusion.</li>
-//               <li>Carry a valid ID and necessary documents at all times.</li>
-//               <li>Always wear a helmet and ensure your safety gear is in place.</li>
-//               <li>Check the weather forecast before heading out.</li>
-//               <li>Keep emergency contact numbers handy.</li>
-//               <li>Pack essentials like water, snacks, and a first-aid kit.</li>
-//               <li>Respect local traffic laws and regulations.</li>
-//             </ul>
-//           </div>
-//           </div>
-//         </aside>
-        
-//       </section>
-//     </div>
-//   );
-// };
-
-// export default FAQS;
 import React, { useEffect, useState } from "react";
 import { Collapse, Input } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { SearchOutlined } from '@ant-design/icons';
-
 import {
   faPersonCircleQuestion,
   faInfoCircle,
@@ -793,17 +30,17 @@ const FAQS = () => {
         {
           question: "What is RideEase?",
           answer:
-            "RideEase is a premium two-wheeler rental service that allows you to rent bikes with ease across the city.",
+            "RideEase is a premier two-wheeler rental platform offering high-quality bikes and scooters with instant digital verification across the city.",
         },
         {
           question: "What makes us special?",
           answer:
-            "We offer assured quality bikes, lowest prices, flexible rental options, and excellent customer support.",
+            "We offer 100% certified quality bikes, competitive rates, doorstep pickup/drop options, and transparent rental agreements with zero hidden costs.",
         },
         {
           question: "How does RideEase work?",
           answer:
-            "You choose your bike, select dates, upload necessary documents, and pick up your ride at the designated location.",
+            "Simply choose your preferred bike, select pickup and drop dates, upload your driver's license, complete secure online payment, and pick up your bike.",
         },
       ],
     },
@@ -813,30 +50,25 @@ const FAQS = () => {
       questions: [
         {
           question: "What documents need to be uploaded?",
-          answer: "You will need a valid driver's license and a government-issued ID proof.",
+          answer: "A valid original driver's license (motorcycle/scooter) and a government-issued ID proof (Aadhaar or Passport).",
         },
         {
-          question: "Is fuel included in the tariff?",
-          answer: "No, fuel charges are not included in the rental tariff. The vehicle will be provided with minimal fuel.",
+          question: "Is fuel included in the rental tariff?",
+          answer: "No, fuel charges are not included. The vehicle is provided with adequate fuel to reach the nearest fuel station, and should be returned with a similar level.",
         },
         {
-          question: "Is there any limit on the number of kilometres?",
+          question: "Is there any limit on the kilometers ridden?",
           answer:
-            "No, we offer unlimited kilometres with our rentals unless specified otherwise.",
+            "Standard rentals come with unlimited kilometers within the defined district limits unless stated otherwise.",
         },
         {
-          question: "Do I have to pay a deposit?",
-          answer: "Yes, a refundable deposit is required at the time of booking.",
+          question: "Do I have to pay a security deposit?",
+          answer: "Yes, a nominal refundable security deposit is collected, which is automatically refunded within 24-48 hours after vehicle return.",
         },
         {
-          question: "When can we expect the refund?",
+          question: "What happens if I return the bike late?",
           answer:
-            "Refunds are processed within 24-48 hours after you return the bike.",
-        },
-        {
-          question: "Is there any penalty for late return?",
-          answer:
-            "Yes, late returns will incur additional charges as per the company policy.",
+            "A standard grace period of 30 minutes is provided. Delays beyond that are charged per hour as specified in the rental agreement.",
         },
       ],
     },
@@ -847,12 +79,12 @@ const FAQS = () => {
         {
           question: "How do I cancel my booking?",
           answer:
-            "You can cancel via your dashboard or contact our customer support team.",
+            "You can cancel via your dashboard under My Bookings or reach out directly to customer support.",
         },
         {
           question: "What is the cancellation policy?",
           answer:
-            "Cancellations made 24 hours before the booking time will get a full refund.",
+            "Cancellations requested at least 24 hours prior to pickup are eligible for a full refund of any advance security deposits.",
         },
       ],
     },
@@ -861,32 +93,37 @@ const FAQS = () => {
       icon: faMapMarkedAlt,
       questions: [
         {
-          question: "Who should I contact to pick up the vehicle and how?",
+          question: "Where and how do I pick up the vehicle?",
           answer:
-            "Our local partner details will be provided post booking confirmation.",
+            "Detailed pickup location, navigation pins, and host contact numbers are provided immediately after booking confirmation.",
         },
         {
-          question: "Can I pick and drop the vehicle at different locations?",
+          question: "Can I drop off the vehicle at a different hub?",
           answer:
-            "Yes, this option is available with extra fees for selected cities.",
+            "Yes, one-way drops are available across select hubs within Udaipur with nominal cross-drop fees.",
         },
       ],
     },
     {
-      category: "Eligibility",
+      category: "Eligibility & Safety",
       icon: faUserShield,
       questions: [
         {
-          question: "Is there any limit on the age of the rider?",
+          question: "What is the minimum age to rent a bike?",
           answer:
-            "Yes, the rider must be at least 18 years old and hold a valid driving license.",
+            "The rider must be at least 18 years old and possess an active, valid driving license.",
+        },
+        {
+          question: "Is a helmet provided?",
+          answer:
+            "Yes, one complimentary ISI-certified safety helmet is provided with each rental. A pillion helmet can also be requested.",
         },
       ],
     },
   ];
 
   useEffect(() => {
-    const timer = setTimeout(() => setAnimate(true), 300);
+    const timer = setTimeout(() => setAnimate(true), 150);
     return () => clearTimeout(timer);
   }, []);
 
@@ -894,140 +131,140 @@ const FAQS = () => {
     .map((section) => ({
       ...section,
       questions: section.questions.filter((q) =>
-        q.question.toLowerCase().includes(searchTerm.toLowerCase())
+        q.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        q.answer.toLowerCase().includes(searchTerm.toLowerCase())
       ),
     }))
     .filter((section) => section.questions.length > 0);
 
   return (
-    <div className="bg-gradient-to-r from-[#fff7f0] to-[#fde9dc] min-h-screen">
-      <section
-        className={`max-w-7xl px-4 sm:px-6 py-10 mx-auto transform transition-all duration-700 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 ${
-          animate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-        }`}
-      >
-        {/* Main FAQ Content */}
-        <div className="lg:col-span-2">
-          <div className={`text-center pt-8 pb-8 transform transition-all duration-700 ${
+    <div className="bg-slate-50 min-h-screen py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header Section */}
+        <div
+          className={`text-center max-w-3xl mx-auto mb-10 transform transition-all duration-700 ${
             animate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          } flex flex-col items-center space-y-4 p-4 sm:p-6 rounded-lg shadow-lg bg-white/50`}>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-orange-900">
-              <FontAwesomeIcon
-                icon={faPersonCircleQuestion}
-                className="text-orange-800 mr-2"
-              />
-              Have Questions?
-            </h2>
-            <p className={`text-[#5a4239] text-lg mt-2 transition-all duration-700 ${
-              animate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-            }`}>
-              Explore Our FAQs for Quick Help.
-            </p>
-            <div className="w-full max-w-md mt-4 px-4 sm:px-0">
-              <Search
-                placeholder="Search FAQs"
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="hover:border-[#733F30] focus:border-[#A15E48] focus:ring focus:ring-orange-300 transition duration-300"
-                enterButton={<SearchOutlined />}
-              />
-            </div>
+          }`}
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold tracking-wide uppercase mb-3">
+            <FontAwesomeIcon icon={faPersonCircleQuestion} className="text-emerald-500" />
+            Support Center
           </div>
+          <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
+            Frequently Asked Questions
+          </h1>
+          <p className="mt-3 text-sm sm:text-base text-slate-600">
+            Have questions about booking, policies, or safety? We've got answers.
+          </p>
           
-          <div className={`${
-            animate ? "translate-x-0 opacity-100" : "-translate-x-10 opacity-0"
-          } transform transition-all duration-700 ease-out`}>
-            {filteredFaqs.map((section, idx) => (
-              <div key={idx} className="mt-6">
-                <h3 className="text-xl sm:text-2xl font-semibold text-[#733F30] mb-4 flex items-center gap-3">
-                  <FontAwesomeIcon
-                    icon={section.icon}
-                    className="text-orange-800"
-                  />
-                  {section.category}
-                </h3>
-                <Collapse
-                  accordion
-                  bordered={false}
-                  className="faq-collapse bg-white/70 rounded-lg shadow-md"
-                  expandIconPosition="right"
-                >
-                  {section.questions.map((item, qIdx) => (
-                    <Panel
-                      header={<span className="text-base sm:text-lg">{item.question}</span>}
-                      key={qIdx}
-                      className="hover:bg-[#F0C8B0] transition duration-300"
-                    >
-                      <p className="text-[#5a4239] text-sm sm:text-base">{item.answer}</p>
-                    </Panel>
-                  ))}
-                </Collapse>
-              </div>
-            ))}
+          <div className="w-full max-w-lg mx-auto mt-6">
+            <Search
+              placeholder="Search by topic or question (e.g. deposit, fuel, license)..."
+              onChange={(e) => setSearchTerm(e.target.value)}
+              size="large"
+              enterButton={<SearchOutlined />}
+              className="shadow-sm rounded-xl"
+            />
           </div>
         </div>
 
-        {/* Sidebar */}
-        <aside className="space-y-6 lg:space-y-8">
-          <div
-            className={`${
-              animate ? "translate-x-0 opacity-100" : "translate-x-10 opacity-0"
-            } transform transition-all duration-700 ease-out flex flex-col justify-center space-y-4`}
-          >
-            <div className="p-4 sm:p-6 bg-[#F0C8B0]/90 rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-2 transition duration-400">
-              <h3 className="text-xl sm:text-2xl font-bold text-[#8B4D3A] mb-4">
-                <FontAwesomeIcon icon={faGift} className="text-orange-800 mr-2" />
-                Promotional Offers
+        {/* Content Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main FAQ Content */}
+          <div className="lg:col-span-2 space-y-8">
+            {filteredFaqs.length === 0 ? (
+              <div className="bg-white p-12 text-center rounded-2xl border border-slate-200">
+                <p className="text-slate-500 text-sm">No matching questions found for "{searchTerm}".</p>
+              </div>
+            ) : (
+              filteredFaqs.map((section, idx) => (
+                <div key={idx} className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                  <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm">
+                      <FontAwesomeIcon icon={section.icon} />
+                    </span>
+                    {section.category}
+                  </h3>
+                  <Collapse
+                    accordion
+                    bordered={false}
+                    className="bg-transparent"
+                    expandIconPosition="end"
+                  >
+                    {section.questions.map((item, qIdx) => (
+                      <Panel
+                        header={<span className="font-semibold text-slate-800 text-sm sm:text-base">{item.question}</span>}
+                        key={qIdx}
+                        className="border-b border-slate-100 last:border-b-0 py-1"
+                      >
+                        <p className="text-slate-600 text-sm leading-relaxed">{item.answer}</p>
+                      </Panel>
+                    ))}
+                  </Collapse>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <aside className="space-y-6">
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+              <h3 className="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
+                <FontAwesomeIcon icon={faGift} className="text-emerald-500" />
+                Current Offers
               </h3>
-              <ul className="list-disc pl-5 space-y-2 text-sm sm:text-base text-[#5a4239]">
-                <li>Get 20% off on weekend bookings!</li>
-                <li>Flat ₹100 cashback on your first rental.</li>
-                <li>Refer a friend and earn ₹200 credits.</li>
+              <ul className="space-y-2.5 text-xs sm:text-sm text-slate-600">
+                <li className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
+                  <span><strong>Weekend Specials:</strong> 15% discount on 3-day continuous rentals.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
+                  <span><strong>First Ride:</strong> Enjoy ₹100 instant waiver on your initial booking.</span>
+                </li>
               </ul>
             </div>
 
-            <div className="p-4 sm:p-6 bg-[#F0C8B0]/90 rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-2 transition duration-400">
-              <h3 className="text-xl sm:text-2xl font-bold text-[#8B4D3A] mb-4">
-                <FontAwesomeIcon icon={faBell} className="text-orange-800 mr-2" />
-                Recent Updates
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+              <h3 className="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
+                <FontAwesomeIcon icon={faCogs} className="text-emerald-500" />
+                How Rental Works
               </h3>
-              <ul className="space-y-2 text-sm sm:text-base text-[#5a4239]">
-                <li>New bike models added to our fleet!</li>
-                <li>Extended rental hours for night riders.</li>
-                <li>Now available in 3 more cities: Pune, Jaipur, and Hyderabad.</li>
-              </ul>
-            </div>
-
-            <div className="p-4 sm:p-6 bg-[#F0C8B0]/90 rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-2 transition duration-400">
-              <h3 className="text-xl sm:text-2xl font-bold text-[#8B4D3A] mb-4">
-                <FontAwesomeIcon icon={faCogs} className="text-orange-800 mr-2" />
-                How It Works
-              </h3>
-              <ol className="list-decimal pl-5 space-y-2 text-sm sm:text-base text-[#5a4239]">
-                <li>Select your preferred bike from our catalog.</li>
-                <li>Choose your rental dates and upload documents.</li>
-                <li>Complete payment and pick up your bike.</li>
-                <li>Enjoy your ride and return it at the scheduled time.</li>
+              <ol className="space-y-3 text-xs sm:text-sm text-slate-600">
+                <li className="flex gap-3">
+                  <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-bold text-[11px] flex items-center justify-center shrink-0">1</span>
+                  <span>Choose your ride and set dates.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-bold text-[11px] flex items-center justify-center shrink-0">2</span>
+                  <span>Upload original driver's license.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-bold text-[11px] flex items-center justify-center shrink-0">3</span>
+                  <span>Pay securely through Razorpay.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-bold text-[11px] flex items-center justify-center shrink-0">4</span>
+                  <span>Pick up key & helmet at the hub!</span>
+                </li>
               </ol>
             </div>
 
-            <div className="p-4 sm:p-6 bg-[#F0C8B0]/90 rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-2 transition duration-400">
-              <h3 className="text-xl sm:text-2xl font-bold text-[#8B4D3A] mb-4">
-                <FontAwesomeIcon icon={faMapSigns} className="text-orange-800 mr-2" />
-                Travel Tips
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+              <h3 className="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
+                <FontAwesomeIcon icon={faMapSigns} className="text-emerald-500" />
+                Rider Guidelines
               </h3>
-              <ul className="list-disc pl-5 space-y-2 text-sm sm:text-base text-[#5a4239]">
-                <li>Plan your route in advance to avoid last-minute confusion.</li>
-                <li>Carry a valid ID and necessary documents at all times.</li>
-                <li>Always wear a helmet and ensure your safety gear is in place.</li>
-                <li>Check the weather forecast before heading out.</li>
-                <li>Keep emergency contact numbers handy.</li>
-                <li>Pack essentials like water, snacks, and a first-aid kit.</li>
-                <li>Respect local traffic laws and regulations.</li>
+              <ul className="space-y-2 text-xs text-slate-600">
+                <li>• Always strap on your helmet securely.</li>
+                <li>• Adhere strictly to local speed limits & signals.</li>
+                <li>• Keep your digital booking receipt accessible.</li>
+                <li>• Call our hub helpline in case of any flat tires.</li>
               </ul>
             </div>
-          </div>
-        </aside>
-      </section>
+          </aside>
+        </div>
+      </div>
     </div>
   );
 };

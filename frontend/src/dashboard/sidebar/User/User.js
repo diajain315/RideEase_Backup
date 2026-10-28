@@ -1,179 +1,55 @@
-// import React, { useState } from "react";
-// import UserTable from "../User/UserTable";
-// import TableWrapper from "../../common/TableWrapper";
-// import Layout from "../../../components/Layout";
-
-// const User = () => {
-//   return (
-//     <Layout title={"Dashboard User table"}>
-//       <div className='flex flex-wrap mt-4'>
-//         <div className='w-full px-4 mb-12'>
-//           <div className='relative flex flex-col min-w-0 mb-6 break-words border-0 rounded-lg shadow-lg max-w-64'>
-//             <div className='px-2 py-2 mb-0 bg-white rounded-t'>
-//               <div className='flex flex-wrap items-center'>
-//                 <div className='relative flex-1 flex-grow w-full max-w-full px-4'>
-//                   <h3 className='py-2 text-lg font-semibold text-orange'>
-//                     Total Users
-//                   </h3>
-//                 </div>
-//               </div>
-//               <UserTable />
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </Layout>
-//     /*   <TableWrapper title='User' addlink='/dashboard/'>
-//     </TableWrapper> */
-//   );
-// };
-
-// export default User;
-
-// import React from "react";
-// import { Card, Typography, Row, Col } from "antd";
-// import UserTable from "../User/UserTable";
-// import Layout from "../../../components/Layout";
-
-// const { Title } = Typography;
-
-// const User = () => {
-//   return (
-//     <Layout title="Dashboard User Table">
-//       <div style={{ minHeight: "calc(100vh - 64px)", padding: "16px" }}>
-//         <Row justify="center" style={{ height: "100%" }}>
-//           <Col span={24}>
-//             <Card
-//               title={
-//                 <Title level={4} style={{ color: "#fa8c16", marginBottom: 0 }}>
-//                   Total Users
-//                 </Title>
-//               }
-//               bordered={false}
-//               style={{
-//                 height: "100%",
-//                 overflow: "hidden",
-//                 borderRadius: 8,
-//               }}
-//               bodyStyle={{ padding: "0" }}
-//             >
-//               <UserTable />
-//             </Card>
-//           </Col>
-//         </Row>
-//       </div>
-//     </Layout>
-//   );
-// };
-
-// export default User;  perfect
-
-// import React, { useState } from "react";
-// import { Card, Typography, Row, Col, Input } from "antd";
-// import UserTable from "../User/UserTable";
-// import Layout from "../../../components/Layout";
-
-// const { Title } = Typography;
-// const { Search } = Input;
-
-// const User = () => {
-//   const [searchText, setSearchText] = useState("");
-
-//   const handleSearch = (value) => {
-//     setSearchText(value);
-//   };
-
-//   return (
-//     <Layout title="Dashboard User Table">
-//       <div style={{ minHeight: "calc(100vh - 64px)", padding: "16px" }}>
-//         <Row justify="center" style={{ height: "100%" }}>
-//           <Col span={24}>
-//             <Card
-//               title={
-//                 <div>
-//                   <Title level={4} style={{ color: "#fa8c16", marginBottom: 0 }}>
-//                     Total Users
-//                   </Title>
-//                   <Search
-//                     placeholder="Search users..."
-//                     onSearch={handleSearch}
-//                     onChange={(e) => handleSearch(e.target.value)}
-//                     style={{ width: 300, marginTop: 12 }}
-//                     allowClear
-//                   />
-//                 </div>
-//               }
-//               bordered={false}
-//               style={{
-//                 height: "100%",
-//                 overflow: "hidden",
-//                 borderRadius: 8,
-//               }}
-//               bodyStyle={{ padding: "0" }}
-//             >
-//               <UserTable searchText={searchText} />
-//             </Card>
-//           </Col>
-//         </Row>
-//       </div>
-//     </Layout>
-//   );
-// };
-
-// export default User; 71 to here for search option
-
 import React, { useState } from "react";
-import { Card, Typography, Row, Col, Input } from "antd";
-import { SearchOutlined } from "@ant-design/icons";
+import { Card, Input } from "antd";
+import { SearchOutlined, ArrowLeftOutlined, UsergroupAddOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 import UserTable from "../User/UserTable";
 import Layout from "../../../components/Layout";
 
-const { Title } = Typography;
-
 const User = () => {
   const [searchText, setSearchText] = useState("");
+  const navigate = useNavigate();
 
   return (
-    <Layout title="Dashboard User Table">
-      <div style={{ minHeight: "calc(100vh - 64px)", padding: "24px" }}>
-        <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
-          <Col>
-            <Title level={3} style={{ color: "black", margin: 0 }}>
-              User Management
-              
-            </Title>
-          </Col>
-          <Col>
+    <Layout title="Dashboard : Users">
+      <div className="p-6 bg-slate-50 min-h-[calc(100vh-64px)]">
+        {/* Top Header Card */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/admin')}
+              className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 transition-colors shadow-sm"
+              title="Back to Dashboard"
+            >
+              <ArrowLeftOutlined />
+            </button>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <UsergroupAddOutlined className="text-emerald-600" />
+                Customer & User Directory
+              </h1>
+              <p className="text-xs text-slate-500">View and manage all registered accounts and credentials</p>
+            </div>
+          </div>
+
+          <div className="w-full sm:w-auto">
             <Input
-              placeholder="Search users..."
-              prefix={<SearchOutlined />}
+              placeholder="Search by name or email..."
+              prefix={<SearchOutlined className="text-slate-400 mr-1" />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              style={{
-                width: 250,
-                borderRadius: 8,
-                boxShadow: "0 0 3px rgba(0, 0, 0, 0.1)",
-              }}
+              className="w-full sm:w-72 rounded-xl border-slate-200 py-2 shadow-sm text-xs"
               allowClear
             />
-          </Col>
-        </Row>
+          </div>
+        </div>
 
-        <Card
-          bordered={false}
-          style={{
-            borderRadius: 12,
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
-          }}
-          bodyStyle={{ padding: 0 }}
-        >
+        {/* User Table Card */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <UserTable searchText={searchText} />
-        </Card>
+        </div>
       </div>
     </Layout>
   );
 };
 
 export default User;
-
-

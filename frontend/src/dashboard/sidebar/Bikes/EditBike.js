@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Formik, ErrorMessage } from "formik";
 import { ValidateBikeAdd } from "../../../common/Validation";
-import AddEditWrapper from "../../common/AddEditWrapper";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Error from "../../../Helper/Error";
 import Spinner from "../../../Helper/Spinner";
 import toast from "react-hot-toast";
@@ -12,350 +11,344 @@ import {
   editBikeById,
 } from "../../../redux/features/Bikes/bikeAction";
 import { clearFields } from "../../../redux/features/Bikes/bikeSlice";
-import { useParams } from "react-router-dom";
 import { CategoryAll } from "../../../redux/features/Category/categoryAction";
+import { ArrowLeftOutlined, ThunderboltOutlined, UploadOutlined } from "@ant-design/icons";
+import Layout from "../../../components/Layout";
+import Loading from "../../../components/Loading";
 
-const base_url = `http://localhost:5001`;
+const base_url = process.env.REACT_APP_API_URL || "http://localhost:5001";
 
 const EditBike = () => {
   const [selectedImage, setSelectedImage] = useState();
   const [errors, setErrors] = useState("");
-  let { id } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
   const onImageChange = (event, setFieldValue) => {
-    setFieldValue("photo", event.target.files[0]);
-    setSelectedImage(URL.createObjectURL(event.target.files[0]));
+    if (event.target.files && event.target.files[0]) {
+      setFieldValue("photo", event.target.files[0]);
+      setSelectedImage(URL.createObjectURL(event.target.files[0]));
+    }
   };
+
   useEffect(() => {
     dispatch(getBikeById(id));
     dispatch(CategoryAll());
-  }, [id]);
+  }, [id, dispatch]);
 
   const { loading, success, bikeById } = useSelector((state) => state.bike);
-  const { categories } = useSelector((state) => state.category);
-  const startType= ['Kick','Self','Both'];
+  const { categories = [] } = useSelector((state) => state.category);
+  const startType = ['Self', 'Kick', 'Both'];
+
   useEffect(() => {
     if (success) {
+      toast.success("Bike updated successfully");
       dispatch(clearFields());
-      navigate(-1);
+      navigate("/admin/bikes");
     }
-  }, [success]);
+  }, [success, dispatch, navigate]);
 
-  const handleBack = async () => {
-    await dispatch(clearFields());
-    navigate(-1);
+  const handleBack = () => {
+    dispatch(clearFields());
+    navigate("/admin/bikes");
   };
-  return (
-    <>
-      {bikeById ? (
-        <AddEditWrapper
-          title='Bike'
-          // error={error}
-          method='update'
-          // success={success}
-          handleBack={handleBack}
-          backlink='/bikes'
-        >
-          <Formik
-            initialValues={{
-              name: bikeById?.name,
-              number: bikeById?.number,
-              price: bikeById?.price,
-              description: bikeById?.description,
-              category: bikeById?.category._id,
-              kilometers: bikeById?.kilometers,
-              petrolCapacity: bikeById?.petrolCapacity,
-              startType: bikeById?.startType,
-              year: bikeById?.year,
-              photo: null,
-            }}
-            validationSchema={ValidateBikeAdd}
-            onSubmit={async (values) => {
-              let formdata = new FormData();
-              formdata.append("name", values.name);
-              formdata.append("number", values.number);
-              formdata.append("photo", values.photo);
-              formdata.append("category", values.category);
-              formdata.append("description", values.description);
-              formdata.append("price", parseInt(values.price));
-              formdata.append("kilometers",parseInt(values.kilometers));
-              formdata.append("startType", values.startType);
-              formdata.append("petrolCapacity", parseInt(values.petrolCapacity));
-              formdata.append("year",parseInt(values.year));
 
-              let data = {
-                id: bikeById._id,
-                formdata: formdata,
-              };
-              const datas = await dispatch(editBikeById(data));
-              if (datas.error) {
-                setErrors(data.payload);
-                dispatch(clearFields());
-              } else {
-                toast.success(`Bike updated successfully`);
-              }
-            }}
-          >
-            {(props) => (
-              <form onSubmit={props.handleSubmit}>
-                <h6 className='mt-3 mb-6 text-sm font-bold uppercase text-blueGray-400'>
-                  Bike Information
-                </h6>
-                <div className='flex flex-wrap'>
-                  <div className='w-full px-4 lg:w-6/12'>
-                    <div className='relative w-full mb-3'>
-                      <label className='block mb-2 text-xs font-bold uppercase text-blueGray-600'>
-                        Bike Name
+  if (!bikeById) {
+    return (
+      <Layout title="Dashboard : Loading Bike">
+        <div className="flex justify-center items-center min-h-[calc(100vh-64px)] bg-slate-50">
+          <Loading fullScreen={false} message="Loading bike details..." />
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout title={`Dashboard : Edit ${bikeById?.name || 'Bike'}`}>
+      <div className="p-6 bg-slate-50 min-h-[calc(100vh-64px)] flex justify-center">
+        <div className="w-full max-w-3xl">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleBack}
+                className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 transition-colors shadow-sm"
+                title="Back to Fleet"
+              >
+                <ArrowLeftOutlined />
+              </button>
+              <div>
+                <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  <ThunderboltOutlined className="text-emerald-600" />
+                  Edit Vehicle Details
+                </h1>
+                <p className="text-xs text-slate-500">Update pricing, technical specifications, or image</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Form Card */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-8">
+            <Formik
+              enableReinitialize
+              initialValues={{
+                name: bikeById?.name || "",
+                number: bikeById?.number || "",
+                price: bikeById?.price || "",
+                description: bikeById?.description || "",
+                category: bikeById?.category?._id || bikeById?.category || "",
+                kilometers: bikeById?.kilometers || "",
+                petrolCapacity: bikeById?.petrolCapacity || "",
+                startType: bikeById?.startType || "Self",
+                year: bikeById?.year || "",
+                photo: null,
+              }}
+              validationSchema={ValidateBikeAdd}
+              onSubmit={async (values) => {
+                let formdata = new FormData();
+                formdata.append("name", values.name);
+                formdata.append("number", values.number);
+                if (values.photo) {
+                  formdata.append("photo", values.photo);
+                }
+                formdata.append("category", values.category);
+                formdata.append("description", values.description);
+                formdata.append("price", parseInt(values.price, 10));
+                formdata.append("kilometers", parseInt(values.kilometers, 10));
+                formdata.append("startType", values.startType);
+                formdata.append("petrolCapacity", parseInt(values.petrolCapacity, 10));
+                formdata.append("year", parseInt(values.year, 10));
+
+                let data = {
+                  id: bikeById._id,
+                  formdata: formdata,
+                };
+                const datas = await dispatch(editBikeById(data));
+                if (datas.error) {
+                  setErrors(datas.payload);
+                  dispatch(clearFields());
+                }
+              }}
+            >
+              {(props) => (
+                <form onSubmit={props.handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                        Bike Model / Name
                       </label>
                       <input
-                        type='text'
-                        className='w-full px-3 py-3 text-sm transition-all duration-150 ease-linear bg-white border-0 rounded shadow placeholder-blueGray-300 text-blueGray-600 focus:outline-none focus:ring'
-                        name='name'
+                        type="text"
+                        name="name"
                         onChange={props.handleChange}
                         onBlur={props.handleBlur}
-                        value={props.values.name || ""}
+                        value={props.values.name}
+                        className="w-full px-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-medium"
                       />
+                      <span className="text-red-500 text-xs mt-1 block">
+                        <ErrorMessage name="name" />
+                      </span>
                     </div>
-                    <span className='text-red-500 error'>
-                      <ErrorMessage name='name' />
-                    </span>
-                  </div>
-                  <div className='w-full px-4 lg:w-6/12'>
-                    <div className='relative w-full mb-3'>
-                      <label className='block mb-2 text-xs font-bold uppercase text-blueGray-600'>
-                        Bike Number
+
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                        Registration Number
                       </label>
                       <input
-                        type='text'
-                        className='w-full px-3 py-3 text-sm transition-all duration-150 ease-linear bg-white border-0 rounded shadow placeholder-blueGray-300 text-blueGray-600 focus:outline-none focus:ring'
-                        name='number'
+                        type="text"
+                        name="number"
                         onChange={props.handleChange}
                         onBlur={props.handleBlur}
-                        value={props.values.number || ""}
+                        value={props.values.number}
+                        className="w-full px-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-mono font-medium"
                       />
+                      <span className="text-red-500 text-xs mt-1 block">
+                        <ErrorMessage name="number" />
+                      </span>
                     </div>
-                    <span className='text-red-500 error'>
-                      <ErrorMessage name='number' />
-                    </span>
                   </div>
-                  <div className='w-full px-4 mt-4 lg:w-6/12'>
-                    <div className='relative w-full mb-3'>
-                      <label className='block mb-2 text-xs font-bold uppercase text-blueGray-600'>
-                        Price Per Day
-                      </label>
-                      <input
-                        type='string'
-                        className='w-full px-3 py-3 text-sm transition-all duration-150 ease-linear bg-white border-0 rounded shadow placeholder-blueGray-300 text-blueGray-600 focus:outline-none focus:ring'
-                        name='price'
-                        onChange={props.handleChange}
-                        onBlur={props.handleBlur}
-                        value={props.values.price || ""}
-                      />
-                    </div>
-                    <span className='text-red-500 error'>
-                      <ErrorMessage name='price' />
-                    </span>
-                  </div>
-                  <div className='w-full px-3 py-3 lg:w-6/12'>
-                    <div className='relative w-full mb-3'>
-                      <label className='block mb-2 text-xs font-bold uppercase text-blueGray-600'>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
                         Category
                       </label>
                       <select
-                        className='w-full px-3 py-3 text-sm transition-all duration-150 ease-linear bg-white border-0 rounded shadow placeholder-blueGray-300 text-blueGray-600 focus:outline-none'
-                        name='category'
+                        name="category"
                         onChange={props.handleChange}
                         onBlur={props.handleBlur}
                         value={props.values.category}
-                        autoComplete='off'
+                        className="w-full px-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                       >
-                        <option value=''>Select</option>
-                        {categories.length !== 0 &&
-                          categories.map((item, i) => {
-                            return (
-                              <>
-                                <option value={item._id}>{item.name}</option>
-                              </>
-                            );
-                          })}
+                        <option value="">Select Category</option>
+                        {categories.map((item) => (
+                          <option key={item._id} value={item._id}>
+                            {item.name}
+                          </option>
+                        ))}
                       </select>
+                      <span className="text-red-500 text-xs mt-1 block">
+                        <ErrorMessage name="category" />
+                      </span>
                     </div>
-                    <span className='text-red-500 error'>
-                      <ErrorMessage name='category' />
-                    </span>
-                  </div>
-                  <div className='w-full px-4 mt-4 lg:w-6/12'>
-                    <div className='relative w-full mb-3'>
-                      <label className='block mb-2 text-xs font-bold uppercase text-blueGray-600'>
-                        Kilometers Used
+
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                        Daily Tariff (₹)
                       </label>
                       <input
-                        type='string'
-                        className='w-full px-3 py-3 text-sm transition-all duration-150 ease-linear bg-white border-0 rounded shadow placeholder-blueGray-300 text-blueGray-600 focus:outline-none focus:ring'
-                        name='kilometers'
+                        type="number"
+                        name="price"
                         onChange={props.handleChange}
                         onBlur={props.handleBlur}
-                        value={props.values.kilometers || ""}
+                        value={props.values.price}
+                        className="w-full px-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-medium"
                       />
+                      <span className="text-red-500 text-xs mt-1 block">
+                        <ErrorMessage name="price" />
+                      </span>
                     </div>
-                    <span className='text-red-500 error'>
-                      <ErrorMessage name='kilometers' />
-                    </span>
-                  </div>
-                  <div className='w-full px-3 py-3 lg:w-6/12'>
-                    <div className='relative w-full mb-3'>
-                      <label className='block mb-2 text-xs font-bold uppercase text-blueGray-600'>
-                        Start Type
+
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                        Start Mechanism
                       </label>
                       <select
-                        className='w-full px-3 py-3 text-sm transition-all duration-150 ease-linear bg-white border-0 rounded shadow placeholder-blueGray-300 text-blueGray-600 focus:outline-none'
-                        name='startType'
+                        name="startType"
                         onChange={props.handleChange}
                         onBlur={props.handleBlur}
                         value={props.values.startType}
-                        autoComplete='off'
+                        className="w-full px-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                       >
-                        <option value=''>Select</option>
-                        {startType.length !== 0 &&
-                          startType.map((item, i) => {
-                            return (
-                              <>
-                                <option value={item}>{item}</option>
-                              </>
-                            );
-                          })}
+                        {startType.map((item) => (
+                          <option key={item} value={item}>
+                            {item}
+                          </option>
+                        ))}
                       </select>
                     </div>
-                    <span className='text-red-500 error'>
-                      <ErrorMessage name='category' />
-                    </span>
                   </div>
-                  <div className='w-full px-4 lg:w-6/12'>
-                    <div className='relative w-full mb-3'>
-                      <label className='block mb-2 text-xs font-bold uppercase text-blueGray-600'>
-                        Petrol Capacity
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                        Mfg Year
                       </label>
                       <input
-                        type='text'
-                        className='w-full px-3 py-3 text-sm transition-all duration-150 ease-linear bg-white border-0 rounded shadow placeholder-blueGray-300 text-blueGray-600 focus:outline-none focus:ring'
-                        name='petrolCapacity'
+                        type="text"
+                        name="year"
                         onChange={props.handleChange}
                         onBlur={props.handleBlur}
-                        value={props.values.petrolCapacity || ""}
-                        max={30}
+                        value={props.values.year}
+                        className="w-full px-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                       />
+                      <span className="text-red-500 text-xs mt-1 block">
+                        <ErrorMessage name="year" />
+                      </span>
                     </div>
-                    <span className='text-red-500 error'>
-                      <ErrorMessage name='petrolCapacity' />
-                    </span>
-                  </div>
-                  <div className='w-full px-4 lg:w-6/12'>
-                    <div className='relative w-full mb-3'>
-                      <label className='block mb-2 text-xs font-bold uppercase text-blueGray-600'>
-                        Year of manufacture
+
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                        Odometer (km)
                       </label>
                       <input
-                        type='text'
-                        className='w-full px-3 py-3 text-sm transition-all duration-150 ease-linear bg-white border-0 rounded shadow placeholder-blueGray-300 text-blueGray-600 focus:outline-none focus:ring'
-                        name='year'
+                        type="number"
+                        name="kilometers"
                         onChange={props.handleChange}
                         onBlur={props.handleBlur}
-                        value={props.values.year || ""}
+                        value={props.values.kilometers}
+                        className="w-full px-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                       />
+                      <span className="text-red-500 text-xs mt-1 block">
+                        <ErrorMessage name="kilometers" />
+                      </span>
                     </div>
-                    <span className='text-red-500 error'>
-                      <ErrorMessage name='year' />
-                    </span>
-                  </div>
-                  <div className='w-full px-3 py-3 lg:w-3/12'>
-                    <div className='relative w-full mb-3 '>
-                      <label className='block mb-2 text-xs font-bold uppercase text-blueGray-600'>
-                        Image
+
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                        Fuel Tank (Liters)
                       </label>
                       <input
-                        type='file'
-                        accept='image/*'
-                        className='w-full px-3 py-3 text-sm transition-all duration-150 ease-linear bg-white border-0 rounded shadow placeholder-blueGray-300 text-blueGray-600 focus:outline-none focus:ring'
-                        onChange={(event) =>
-                          onImageChange(event, props.setFieldValue)
-                        }
+                        type="number"
+                        name="petrolCapacity"
+                        onChange={props.handleChange}
                         onBlur={props.handleBlur}
-                        autoComplete='off'
+                        value={props.values.petrolCapacity}
+                        className="w-full px-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                       />
+                      <span className="text-red-500 text-xs mt-1 block">
+                        <ErrorMessage name="petrolCapacity" />
+                      </span>
                     </div>
-                    <span className='text-red-500 error'>
-                      <ErrorMessage name='photo' />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                      Description
+                    </label>
+                    <textarea
+                      name="description"
+                      rows={3}
+                      onChange={props.handleChange}
+                      onBlur={props.handleBlur}
+                      value={props.values.description}
+                      className="w-full px-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    />
+                    <span className="text-red-500 text-xs mt-1 block">
+                      <ErrorMessage name="description" />
                     </span>
                   </div>
-                  <div className='px-4 lg:w-3/12'>
-                    {selectedImage ? (
-                      <div className='relative mt-4'>
-                        <img
-                          src={selectedImage}
-                          height={80}
-                          width={80}
-                          alt='Bike-image'
-                        />
-                      </div>
-                    ) : (
+
+                  {/* Photo Section */}
+                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center gap-4">
+                    <div className="shrink-0">
                       <img
-                        src={`${base_url}/api/v1/bike/bike-photo/${id}`}
-                        height={80}
-                        width={80}
-                        alt='Bike-image'
+                        src={selectedImage || `${base_url}/api/v1/bike/bike-photo/${id}?timestamp=${Date.now()}`}
+                        alt="Vehicle preview"
+                        className="w-24 h-20 object-cover rounded-xl border border-slate-200 shadow-sm"
                       />
-                    )}
-                  </div>
-                  <div className='w-full px-4 mt-4 lg:w-6/12'>
-                    <div className='relative w-full mb-3'>
-                      <label className='block mb-2 text-xs font-bold uppercase text-blueGray-600'>
-                        Description
-                      </label>
-                      <textarea
-                        className='w-full px-3 py-2 text-sm transition-all duration-150 ease-linear bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring focus:border-blue-300'
-                        name='description'
-                        onChange={props.handleChange}
-                        onBlur={props.handleBlur}
-                        value={props.values.description || ""}
-                        cols={5}
-                        rows={5}
-                      ></textarea>
                     </div>
-                    <span className='text-red-500 error'>
-                      <ErrorMessage name='description' />
-                    </span>
+                    <div className="flex-1 w-full">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                        Update Vehicle Photo
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => onImageChange(e, props.setFieldValue)}
+                        className="text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+                      />
+                    </div>
                   </div>
+
                   {errors && <Error>{errors}</Error>}
-                </div>
-                <hr className='mt-6 border-b-1 border-blueGray-300' />
-                <div className='w-full px-3 py-3 lg:w-6/12'>
-                  <div className='relative w-full mt-3 mb-3'>
-                    {loading ? (
-                      <Spinner />
-                    ) : (
-                      <button
-                        type='submit'
-                        className='px-4 py-2 mr-1 text-xs font-bold text-white uppercase transition-all duration-150 ease-linear rounded shadow outline-none bg-orange active:bg-lightBlue-600 hover:shadow-md focus:outline-none'
-                      >
-                        Submit
-                      </button>
-                    )}
+
+                  <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={handleBack}
+                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-6 py-2.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 disabled:opacity-70"
+                    >
+                      {loading ? <Spinner /> : "Save Changes"}
+                    </button>
                   </div>
-                </div>
-              </form>
-            )}
-          </Formik>
-        </AddEditWrapper>
-      ) : (
-        <Spinner />
-      )}
-    </>
+                </form>
+              )}
+            </Formik>
+          </div>
+        </div>
+      </div>
+    </Layout>
   );
 };
 
 export default EditBike;
-
-
-
-

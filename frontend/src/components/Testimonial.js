@@ -1,95 +1,19 @@
-// import React, { useEffect, useState } from "react";
-// import axios from "axios";
-// import { Divider } from "antd";
-// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-// import { faComments } from "@fortawesome/free-solid-svg-icons"; // Import specific icon
-// import { Carousel } from "antd";
-// const Testimonial = () => {
-//   const [reviews, setReviews] = useState([]);
-
-//   useEffect(() => {
-//     const fetchReviews = async () => {
-//       try {
-//         const res = await axios.get("/api/v1/review/all");
-//         if (res.data.success) {
-//           setReviews(res.data.reviews);
-//         }
-//       } catch (error) {
-//         console.error("Error fetching reviews:", error);
-//       }
-//     };
-//     fetchReviews();
-//   }, []);
-
-//   return (
-//     <section className='bg-orange-50 text-gray-700 body-font flex-wrap justify-center'>
-
-//       <div className='container px-5 py-8 mx-auto'>
-//       <Divider className="!h-1 !w-24 !min-w-0 !mx-auto !my-0 !mb-4 bg-gradient-to-r from-[#5a4239] to-orange-900" />
-//       <h2 className="!text-4xl !font-bold !text-orange-900 flex items-center justify-center gap-3 !mb-2 !mt-4">
-//         <FontAwesomeIcon
-//         icon={faComments}
-//         className="mr-3 text-3xl sm:text-4xl text-orange-900"
-//       />
-//           Our Testimonials
-//         </h2>
-//         <Carousel autoplay className='mx-auto w-[20rem] sm:w-[26rem]'>
-//           {reviews.map((review, index) => (
-//             <div
-//               className='px-3 py-6 mb-6 border-2 rounded-md'
-//               key={index}
-//             >
-//               <div className='flex flex-col items-center justify-center text-center'>
-//                 <img
-//                   alt='testimonial'
-//                   className='w-20 h-20 mb-6 rounded-full object-cover border-2 border-gray-200 bg-gray-100'
-//                   src='/images/testimonials/avatar.jpg'
-//                 />
-//                 <p className='leading-relaxed italic'>" {review.message} "</p>
-//                 <div className='flex mt-4'>
-//                   {[...Array(5)].map((_, i) => (
-//                     <span
-//                       key={i}
-//                       className={`text-yellow-500 text-lg ${
-//                         i < review.rating ? "fas fa-star" : "far fa-star"
-//                       }`}
-//                     >
-//                       ★
-//                     </span>
-//                   ))}
-//                 </div>
-//                 <h2 className='mt-4 text-sm font-medium tracking-wider text-gray-900 title-font'>
-//                   - {review.name}
-//                 </h2>
-//               </div>
-//             </div>
-//           ))}
-//         </Carousel>
-//       </div>
-//     </section>
-//   );
-// };
-
-// export default Testimonial;
-
-
-
-
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { Divider } from "antd";
+import Http from "../Helper/Http";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faComments } from "@fortawesome/free-solid-svg-icons";
-import { Carousel } from "antd";
+import { faComments, faStar, faQuoteLeft, faPenToSquare } from "@fortawesome/free-solid-svg-icons";
+import { Carousel, Modal } from "antd";
+import ReviewForm from "./ReviewForm";
 
-const Testimonial = () => {
+export default function Testimonial() {
   const [reviews, setReviews] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const res = await axios.get("/api/v1/review/all");
-        if (res.data.success) {
+        const res = await Http.get("/api/v1/review/all");
+        if (res.data?.success) {
           setReviews(res.data.reviews);
         }
       } catch (error) {
@@ -99,10 +23,8 @@ const Testimonial = () => {
     fetchReviews();
   }, []);
 
-  // Helper function to split reviews into chunks
   const chunkReviews = (arr, chunkSize) => {
     if (!arr.length || chunkSize < 1) return [];
-
     const chunks = [];
     for (let i = 0; i < arr.length; i += chunkSize) {
       chunks.push(arr.slice(i, i + chunkSize));
@@ -110,168 +32,120 @@ const Testimonial = () => {
     return chunks;
   };
 
-  // Divide reviews into 3 groups
   const reviewChunks = chunkReviews(reviews, Math.ceil(reviews.length / 3));
 
   return (
-    <section className="bg-[#fff7f0] text-gray-700 body-font flex-wrap justify-center">
-      <div className="container px-5 py-8 mx-auto mb-3">
-        <Divider className="!h-1 !w-24 !min-w-0 !mx-auto !my-0 !mb-4 bg-gradient-to-r from-[#5a4239] to-orange-900" />
-        <h2 className="!text-3xl sm:!text-4xl !font-bold !text-orange-900 flex items-center justify-center gap-3 !mb-2 !mt-4 text-center">
-          <FontAwesomeIcon
-            icon={faComments}
-            className="mr-3 text-3xl sm:text-4xl text-orange-900"
-          />
-          Our Testimonials
-        </h2>
+    <section className="bg-slate-50 py-16 sm:py-20 px-4 sm:px-6 lg:px-8 border-t border-slate-200">
+      <div className="container max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-12">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
+              Rider Stories
+            </span>
+            <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
+              Loved by Travelers in Udaipur
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-xl">
+              Authentic reviews from tourists, couples, and road-trippers who rented with RideEase.
+            </p>
+          </div>
 
-        {reviewChunks.length ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-10">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 text-xs font-bold shadow-xs transition-all shrink-0"
+          >
+            <FontAwesomeIcon icon={faPenToSquare} className="text-emerald-600" />
+            <span>Write a Review</span>
+          </button>
+        </div>
+
+        {reviewChunks.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {reviewChunks.map((chunk, chunkIndex) => (
-            <Carousel autoplay key={chunkIndex} className="mx-auto w-full max-w-sm">
-              {chunk.map((review, index) => (
-                <div className="px-4 py-8 mb-8 border rounded-lg shadow-md bg-[#FFE7C5] border-[#DCA689]/70" key={index}>
-                  <div className="flex flex-col items-center justify-center text-center">
-                    <img
-                      alt="testimonial"
-                      className="inline-block object-cover object-center w-20 h-20 mb-6 bg-gray-100 border-4 border-orange-900 rounded-full shadow-sm"
-                      src="/images/testimonials/avatar.jpg"
-                    />
-                    <p className="mb-4 text-sm text-[#5a4239] leading-relaxed">" {review.message} "</p>
-                    <div className="flex mt-4">
-                      {[...Array(5)].map((_, i) => (
-                        <svg
-                          key={i}
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill={i < review.rating ? "#FACC15" : "none"} // yellow-400
-                          viewBox="0 0 24 24"
-                          stroke="#FACC15"
-                          strokeWidth={1.5}
-                          className="w-8 h-8 inline-block" // Larger stars, no margin
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M11.48 3.499l2.122 4.296 4.74.689-3.431 3.343.81 4.725-4.241-2.229-4.241 2.23.81-4.726-3.431-3.343 4.74-.689 2.122-4.296z"
+              <Carousel
+                autoplay
+                key={chunkIndex}
+                className="w-full"
+                dots={{ className: "!bottom-[-16px]" }}
+              >
+                {chunk.map((review, index) => (
+                  <div key={index} className="p-1">
+                    <div className="h-full flex flex-col justify-between p-6 rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                      <div>
+                        {/* Rating Stars */}
+                        <div className="flex items-center gap-1 mb-3">
+                          {[...Array(5)].map((_, i) => (
+                            <FontAwesomeIcon
+                              key={i}
+                              icon={faStar}
+                              className={`text-xs ${
+                                i < review.rating
+                                  ? "text-amber-400"
+                                  : "text-slate-200"
+                              }`}
+                            />
+                          ))}
+                        </div>
+
+                        {/* Quote icon & text */}
+                        <div className="relative mb-5">
+                          <FontAwesomeIcon
+                            icon={faQuoteLeft}
+                            className="text-slate-200 text-xl absolute -top-2.5 -left-1 opacity-70"
                           />
-                        </svg>
-                      ))}
+                          <p className="relative z-10 text-slate-700 text-xs sm:text-sm leading-relaxed italic pl-5">
+                            "{review.message}"
+                          </p>
+                        </div>
+                      </div>
 
-
-
+                      {/* Author */}
+                      <div className="pt-3 border-t border-slate-100 flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                          {review.name ? review.name.charAt(0).toUpperCase() : "R"}
+                        </div>
+                        <div>
+                          <p className="font-bold text-xs text-slate-900 leading-tight">
+                            {review.name}
+                          </p>
+                          <p className="text-[11px] text-slate-400">Verified Rider</p>
+                        </div>
+                      </div>
                     </div>
-                    <h2 className="text-lg font-semibold tracking-wide text-orange-900">
-                      - {review.name}
-                    </h2>
                   </div>
-                </div>
-              ))}
-            </Carousel>
+                ))}
+              </Carousel>
             ))}
           </div>
         ) : (
-          <div className="mx-auto mt-10 max-w-xl rounded-lg border border-[#DCA689]/70 bg-white p-6 text-center shadow-sm">
-            <p className="text-[#5a4239]">
-              Reviews will appear here as soon as customers start sharing their rides.
+          <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <FontAwesomeIcon icon={faComments} className="text-3xl text-emerald-500 mb-3" />
+            <h3 className="font-bold text-slate-800 text-sm">No reviews yet</h3>
+            <p className="text-xs text-slate-500 mt-1 mb-4">
+              Be the first to share your experience exploring Udaipur with RideEase!
             </p>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700"
+            >
+              Write First Review
+            </button>
           </div>
         )}
+
+        {/* Modal for Submitting a Review */}
+        <Modal
+          title={<span className="font-bold text-slate-900">Share Your Experience</span>}
+          open={isModalOpen}
+          footer={null}
+          onCancel={() => setIsModalOpen(false)}
+        >
+          <div className="pt-2">
+            <ReviewForm />
+          </div>
+        </Modal>
       </div>
     </section>
   );
-};
-
-export default Testimonial;
-
-
-
-// import React, { useEffect, useState } from "react";
-// import axios from "axios";
-// import { Carousel } from "antd";
-// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-// import { faComments } from "@fortawesome/free-solid-svg-icons";
-
-// const TestimonialCarousel = ({ reviews, dotPosition }) => (
-//   <Carousel
-//     autoplay
-//     dotPosition={dotPosition}
-//     className="m-auto sm:w-[26rem] w-[20rem]"
-//   >
-//     {reviews.map((review, index) => (
-//       <div
-//         className="px-4 py-8 mb-6 border-2 rounded-lg shadow-md bg-[#FFE7C5] border-gray-200"
-//         key={index}
-//       >
-//         <div className="flex flex-col items-center justify-center h-full text-center">
-//           <img
-//             alt={review.name}
-//             className="inline-block object-cover object-center w-20 h-20 mb-6 bg-gray-100 border-4 border-orange-900 rounded-full shadow-sm"
-//             src={review.image}
-//           />
-//           <p className="mb-4 text-sm text-[#5a4239] leading-relaxed">
-//             {review.review}
-//           </p>
-//           <span className="inline-block w-12 h-1 mt-4 mb-2 rounded bg-orange-900"></span>
-//           <h2 className="text-lg font-semibold tracking-wide text-orange-900">
-//             {review.name}
-//           </h2>
-//         </div>
-//       </div>
-//     ))}
-//   </Carousel>
-// );
-
-// const Testimonial = () => {
-//   const [reviews, setReviews] = useState([]);
-
-//   useEffect(() => {
-//     const fetchReviews = async () => {
-//       try {
-//         const res = await axios.get("/api/v1/review/all");
-//         if (res.data.success) {
-//           setReviews(res.data.reviews);
-//         }
-//       } catch (error) {
-//         console.error("Error fetching reviews:", error);
-//       }
-//     };
-//     fetchReviews();
-//   }, []);
-
-//   // Helper function to split reviews into chunks
-//   const chunkReviews = (arr, chunkSize) => {
-//     const chunks = [];
-//     for (let i = 0; i < arr.length; i += chunkSize) {
-//       chunks.push(arr.slice(i, i + chunkSize));
-//     }
-//     return chunks;
-//   };
-
-//   // Divide reviews into groups
-//   const reviewChunks = chunkReviews(reviews, Math.ceil(reviews.length / 3));
-
-//   return (
-//     <section className="bg-gradient-to-r from-orange-50 via-white to-orange-50 text-gray-700 body-font flex-wrap justify-center">
-//       <div className="container px-6 py-12 mx-auto flex-wrap justify-center">
-//         <h2 className="!text-4xl !font-bold !text-orange-900 flex items-center justify-center gap-3 !mb-2">
-//           <FontAwesomeIcon
-//             icon={faComments}
-//             className="mr-3 text-3xl sm:text-4xl text-orange-900"
-//           />
-//           Our Testimonials
-//         </h2>
-//         <div className="flex flex-col gap-6 sm:flex-row justify-center">
-//           {reviewChunks.map((chunk, index) => (
-//             <TestimonialCarousel
-//               key={index}
-//               reviews={chunk}
-//               dotPosition="bottom"
-//             />
-//           ))}
-//         </div>
-//       </div>
-//     </section>
-//   );
-// };
-
-// export default Testimonial;
+}

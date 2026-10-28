@@ -1,3 +1,4 @@
+import { SERVER_INSTANCE_ID } from "../server.js";
 import JWT from "jsonwebtoken";
 import userModel from "../models/userModel.js";
 
@@ -15,6 +16,13 @@ export const requireSignIn = async (req, res, next) => {
       req.headers.authorization.split(" ")[1],
       process.env.JWT_SECRET
     );
+    if (!decode.serverInstanceId || decode.serverInstanceId !== SERVER_INSTANCE_ID) {
+      return res.status(401).json({
+        success: false,
+        sessionExpired: true,
+        message: "Session expired because server was restarted. Please log in again.",
+      });
+    }
     req.user = decode;
     next();
   } catch (error) {

@@ -1,6 +1,7 @@
 // // import { comparePassword, hashPassword } from "../helpers/authHelper.js";
 // // import userModel from "../models/userModel.js";
 // // import JWT from "jsonwebtoken";
+import { SERVER_INSTANCE_ID } from "../server.js";
 
 // // // POST REGISTER
 // // export const registerController = async (req, res) => {
@@ -20,7 +21,7 @@
 // //     if (!answer) {
 // //       return res.send({ error: "Security Question field is required" });
 // //     }
-// //     if(email==='djmgroup23@gmail.com'){
+// //     if(email==='bikerent29@gmail.com'){
 // //       isAdmin=true;
 // //     }
 // //     // check user
@@ -281,7 +282,7 @@
 //     if (!password) return res.send({ error: "Password is required" });
 //     if (!answer) return res.send({ error: "Security Question field is required" });
 
-//     if (email === "djmgroup23@gmail.com") isAdmin = true;
+//     if (email === "bikerent29@gmail.com") isAdmin = true;
 
 //     const existingUser = await userModel.findOne({ email });
 //     if (existingUser && !isAdmin) {
@@ -512,7 +513,7 @@
 //     if (!password) return res.send({ error: "Password is required" });
 //     if (!answer) return res.send({ error: "Security Question field is required" });
 
-//     if (email === "djmgroup23@gmail.com") isAdmin = true;
+//     if (email === "bikerent29@gmail.com") isAdmin = true;
 
 //     const existingUser = await userModel.findOne({ email });
 //     if (existingUser && !isAdmin) {
@@ -642,13 +643,14 @@
 
 import { comparePassword, hashPassword } from "../helpers/authHelper.js";
 import userModel from "../models/userModel.js";
+import orderModel from "../models/orderModel.js";
 import JWT from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import fs from "fs";
-
+import { verifyDrivingLicenseDocument } from "../helpers/licenseVerificationHelper.js";
 
 // ✅ Utility to generate 6-digit OTP
-const generateOTP = () => Math.floor(1000 + Math.random() * 1000).toString();
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 // ✅ Nodemailer setup to send OTP email
 const sendOtpEmail = async (email, otp) => {
@@ -661,21 +663,23 @@ const sendOtpEmail = async (email, otp) => {
   });
 
   await transporter.sendMail({
-    from: `"Bike-4-Rent App" <${process.env.MAIL_USER}>`,
+    from: `"RideEase App" <${process.env.MAIL_USER}>`,
     to: email,
     subject: "Your OTP Code",
-    html: `<p>Your OTP is <strong>${otp}</strong>. It will expire in 1 minute.</p>`,
+    html: `<p>Your OTP is <strong>${otp}</strong>. It will expire in 5 minutes.</p>`,
   });
 };
 
 export const registerController = async (req, res) => {
   try {
-    const { name, email, password,phone,gender } = req.body;
-    let isAdmin = email === "djmgroup23@gmail.com";
+    let { name, email, password, phone, gender } = req.body;
 
     if (!name || !email || !password || !phone || !gender) {
-      return res.status(400).send({ error: "All fields are required" });
+      return res.status(400).send({ success: false, message: "All fields are required" });
     }
+
+    email = email.trim().toLowerCase();
+    let isAdmin = email === "bikerent29@gmail.com";
 
     const existingUser = await userModel.findOne({ email });
     if (existingUser && !isAdmin) {
@@ -695,53 +699,22 @@ export const registerController = async (req, res) => {
     res.status(201).send({
       success: true,
       message: "User registered successfully",
-      user: { name: user.name, email: user.email, _id: user._id,phone: user.phone,gender: user.gender },
+      user: { name: user.name, email: user.email, _id: user._id, phone: user.phone, gender: user.gender },
     });
   } catch (error) {
-    res.status(500).send({ success: false, message: "Registration error", error });
+    res.status(500).send({ success: false, message: "Registration error", error: error.message });
   }
 };
-// export const registerController = async (req, res) => {
-//   try {
-//     const { name, email, password} = req.body;
-
-//     let isAdmin = email === "djmgroup23@gmail.com";
-
-//     if (!name || !email || !password ) {
-//       return res.status(400).send({ error: "All fields are required" });
-//     }
-
-//     const existingUser = await userModel.findOne({ email });
-//     if (existingUser && !isAdmin) {
-//       return res.status(409).send({ success: false, message: "Email already exists!" });
-//     }
-
-//     const hashedPassword = await hashPassword(password);
-//     const user = await new userModel({
-//       name,
-//       email,
-//       password: hashedPassword,
-//       answer,
-//       role: isAdmin ? 1 : 0,
-//     }).save();
-
-//     res.status(201).send({
-//       success: true,
-//       message: "User registered successfully",
-//       user: { name: user.name, email: user.email, _id: user._id},
-//     });
-//   } catch (error) {
-//     res.status(500).send({ success: false, message: "Registration error", error });
-//   }
-// };
 
 // ✅ LOGIN Controller
 export const loginController = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
     if (!email || !password) {
       return res.status(400).send({ success: false, message: "Missing credentials" });
     }
+
+    email = email.trim().toLowerCase();
 
     const user = await userModel.findOne({ email });
     if (!user || !(await comparePassword(password, user.password))) {
@@ -749,7 +722,7 @@ export const loginController = async (req, res) => {
     }
 
     const token = JWT.sign(
-      { _id: user._id, name: user.name, role: user.role },
+      { _id: user._id, name: user.name, role: user.role, serverInstanceId: SERVER_INSTANCE_ID },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -757,46 +730,48 @@ export const loginController = async (req, res) => {
     res.status(200).send({
       success: true,
       message: "Login successful",
-      user: { name: user.name, email: user.email, _id: user._id, role: user.role },
+      user: { name: user.name, email: user.email, _id: user._id, role: user.role, gender: user.gender, phone: user.phone },
       token,
+      serverInstanceId: SERVER_INSTANCE_ID,
     });
   } catch (error) {
-    res.status(500).send({ success: false, message: "Login failed", error });
+    res.status(500).send({ success: false, message: "Login failed", error: error.message });
   }
 };
 
 // ✅ SEND OTP Controller
 export const sendOtpController = async (req, res) => {
   try {
-    const { email } = req.body;
+    let { email } = req.body;
     if (!email) return res.status(400).send({ success: false, message: "Email is required" });
 
+    email = email.trim().toLowerCase();
     const user = await userModel.findOne({ email });
     if (!user) return res.status(404).send({ success: false, message: "User not found" });
 
     const otp = generateOTP();
-    const expiry = new Date(Date.now() + 1 * 60 * 1000); // 1 min
+    const expiry = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
 
     user.otp = { code: otp, expiry };
     await user.save();
-    console.log('✅ OTP saved:', user.otp); 
-    console.log(user);
+    console.log('✅ OTP saved for user:', email);
     await sendOtpEmail(email, otp);
 
     res.status(200).send({ success: true, message: "OTP sent successfully" });
   } catch (error) {
-    res.status(500).send({ success: false, message: "Failed to send OTP", error });
+    res.status(500).send({ success: false, message: "Failed to send OTP", error: error.message });
   }
 };
 
 // ✅ VERIFY OTP Controller
 export const verifyOtpController = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    let { email, otp } = req.body;
     if (!email || !otp) {
       return res.status(400).send({ success: false, message: "Email and OTP are required" });
     }
 
+    email = email.trim().toLowerCase();
     const user = await userModel.findOne({ email });
     if (!user || !user.otp || !user.otp.code) {
       return res.status(404).send({ success: false, message: "OTP not found or expired" });
@@ -813,22 +788,23 @@ export const verifyOtpController = async (req, res) => {
       return res.status(410).send({ success: false, message: "OTP expired" });
     }
 
-    user.otp = undefined;
+    user.otp = { code: "VERIFIED", expiry: new Date(Date.now() + 10 * 60 * 1000) };
     await user.save();
 
     res.status(200).send({ success: true, message: "OTP verified successfully" });
   } catch (error) {
-    res.status(500).send({ success: false, message: "OTP verification failed", error });
+    res.status(500).send({ success: false, message: "OTP verification failed", error: error.message });
   }
 };
 
 export const forgotPasswordController = async (req, res) => {
   try {
-    const { email, answer, newPassword } = req.body;
+    let { email, answer, newPassword } = req.body;
     if (!email || !answer || !newPassword) {
-      return res.status(400).send({ message: "All fields are required" });
+      return res.status(400).send({ success: false, message: "All fields are required" });
     }
 
+    email = email.trim().toLowerCase();
     const user = await userModel.findOne({ email });
     if (!user || user.answer !== answer) {
       return res.status(401).send({ success: false, message: "Invalid credentials or answer" });
@@ -837,31 +813,37 @@ export const forgotPasswordController = async (req, res) => {
     const hashed = await hashPassword(newPassword);
     await userModel.findOneAndUpdate({ email }, { password: hashed });
 
-    const token = JWT.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    const token = JWT.sign({ _id: user._id, serverInstanceId: SERVER_INSTANCE_ID }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
     res.status(200).send({
       success: true,
       message: "Password updated successfully",
       user: { name: user.name, email: user.email, _id: user._id, role: user.role },
       token,
+      serverInstanceId: SERVER_INSTANCE_ID,
     });
   } catch (error) {
-    res.status(500).send({ success: false, message: "Something went wrong", error });
+    res.status(500).send({ success: false, message: "Something went wrong", error: error.message });
   }
 };
 
 export const resetPasswordController = async (req, res) => {
   try {
-
-    console.log('818:',req.body);
-    const { newPassword, email } = req.body;
-    if (!newPassword) {
+    let { newPassword, email } = req.body;
+    if (!newPassword || !email) {
       return res.status(400).send({ success: false, message: "Email and new password are required" });
     }
 
+    email = email.trim().toLowerCase();
     const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.status(404).send({ success: false, message: "User not found" });
+    }
 
-      
+    if (!user.otp || user.otp.code !== "VERIFIED" || (user.otp.expiry && new Date() > new Date(user.otp.expiry))) {
+      return res.status(400).send({ success: false, message: "Please verify OTP before resetting password" });
+    }
+
     const hashedPassword = await hashPassword(newPassword);
     user.password = hashedPassword;
     user.otp = undefined;
@@ -869,35 +851,52 @@ export const resetPasswordController = async (req, res) => {
 
     res.status(200).send({ success: true, message: "Password reset successful" });
   } catch (error) {
-    res.status(500).send({ success: false, message: "Password reset failed", error });
+    res.status(500).send({ success: false, message: "Password reset failed", error: error.message });
   }
 };
 
-// export const resetPasswordController = async(req,res) =>{
-//   const {email} = req.body;
-//   console.log(email);
-
-// };
-
-// ✅ GET ALL USERS
+// ✅ GET ALL USERS (Newest first + order count)
 export const AllUsersController = async (req, res) => {
   try {
-    const allUsers = await userModel.find({}, { password: 0 });
+    const allUsers = await userModel
+      .find({}, { password: 0 })
+      .sort({ createdAt: -1 });
+
     if (!allUsers || allUsers.length === 0) {
-      return res.status(204).send({ success: true, message: "No data found" });
+      return res.status(200).send({ success: true, users: [] });
     }
-    res.status(200).send({ success: true, users: allUsers });
+
+    // Attach order counts
+    let orderCountMap = {};
+    try {
+      const orders = await orderModel.find({}, "renter");
+      orders.forEach((o) => {
+        if (o.renter) {
+          const id = o.renter.toString();
+          orderCountMap[id] = (orderCountMap[id] || 0) + 1;
+        }
+      });
+    } catch (orderErr) {
+      console.warn("Could not aggregate order counts:", orderErr.message);
+    }
+
+    const usersWithStats = allUsers.map((u) => {
+      const uObj = u.toObject();
+      uObj.ordersCount = orderCountMap[u._id.toString()] || 0;
+      return uObj;
+    });
+
+    res.status(200).send({ success: true, users: usersWithStats });
   } catch (error) {
-    res.status(500).send({ success: false, message: "Something went wrong", error });
+    res.status(500).send({ success: false, message: "Something went wrong", error: error.message });
   }
 };
-
 
 export const userProfileController = async (req, res) => {
   try {
-    const user = await userModel.findById(req.user._id).select("-password"); // Exclude password
+    const user = await userModel.findById(req.user._id).select("-password");
     if (!user) {
-      return res.status(400).send({ success: false, message: "User not found" });
+      return res.status(404).send({ success: false, message: "User not found" });
     }
 
     res.status(200).send({
@@ -913,20 +912,25 @@ export const userProfileController = async (req, res) => {
       message: "User info fetched successfully",
     });
   } catch (error) {
-    res.status(500).send({ success: false, error, message: "Something went wrong" });
+    res.status(500).send({ success: false, error: error.message, message: "Something went wrong" });
   }
 };
-
 
 export const editUserController = async (req, res) => {
   try {
     const { id, formdata } = req.body;
     
-    // Validate input
     if (!id) {
       return res.status(400).json({ 
         success: false, 
         message: "User ID is required" 
+      });
+    }
+
+    if (req.user._id.toString() !== id.toString() && req.user.role !== 1) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized to edit this user profile"
       });
     }
     
@@ -936,15 +940,19 @@ export const editUserController = async (req, res) => {
         message: "No data provided for update" 
       });
     }
+
+    const safeUpdate = { ...formdata };
+    if (req.user.role !== 1) {
+      delete safeUpdate.role;
+      delete safeUpdate.password;
+    }
     
-    // Find user by ID and update
     const updatedUser = await userModel.findByIdAndUpdate(
       id,
-      { $set: formdata },
+      { $set: safeUpdate },
       { new: true, runValidators: true }
-    ).select("-password"); // Exclude password from the returned document
+    ).select("-password");
     
-    // Check if user exists
     if (!updatedUser) {
       return res.status(404).json({
         success: false,
@@ -952,7 +960,6 @@ export const editUserController = async (req, res) => {
       });
     }
     
-    // Return success response
     return res.status(200).json({
       success: true,
       message: "User updated successfully",
@@ -961,23 +968,18 @@ export const editUserController = async (req, res) => {
     
   } catch (error) {
     console.error("Error updating user:", error);
-    
-    // Handle specific MongoDB errors
     if (error.name === 'CastError') {
       return res.status(400).json({
         success: false,
         message: "Invalid user ID format"
       });
     }
-    
     if (error.name === 'ValidationError') {
       return res.status(400).json({
         success: false,
         message: error.message
       });
     }
-    
-    // Generic error response
     return res.status(500).json({
       success: false,
       message: "Error updating user profile"
@@ -987,46 +989,93 @@ export const editUserController = async (req, res) => {
 
 export const updateLicenseDetails = async (req, res) => {
   try {
-   
-    const { userId, licenseNumber } = req.fields;
-    const {licenseFile} = req.files;    
-    console.log(JSON.stringify(licenseFile, null, 2));
+    const { userId, licenseNumber } = req.fields || {};
+    const { licenseFile } = req.files || {};
 
     if (!userId || !licenseNumber || !licenseFile) {
       return res.status(400).json({ success: false, message: "All fields are required" });
     }
 
-    // Optionally, add file validation (e.g., checking file type)
-    const allowedFileTypes = ["image/jpeg", "image/png", "application/pdf"];
-    if (!allowedFileTypes.includes(licenseFile.type)) {
+    if (req.user._id.toString() !== userId.toString() && req.user.role !== 1) {
+      return res.status(403).json({ success: false, message: "Unauthorized to update license" });
+    }
+
+    const fileType = licenseFile.type || licenseFile.mimetype || "";
+    const allowedFileTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
+    if (!allowedFileTypes.includes(fileType)) {
       return res.status(400).json({ success: false, message: "Invalid file type. Please upload an image or PDF" });
     }
+
+    const filePath = licenseFile.path || licenseFile.filepath;
+
+    // 🛑 STRICT VERIFICATION: Verify that uploaded document is actually a Driving License
+    const verification = await verifyDrivingLicenseDocument(filePath, fileType, licenseNumber);
+    if (!verification.isValid) {
+      return res.status(422).json({
+        success: false,
+        isDrivingLicense: false,
+        message: verification.reason || "Uploaded image does not appear to be an official Driving License. Please upload a clear photo of your Driving License card.",
+      });
+    }
+
     let licenseData = {};
-    if (licenseFile) {
+    if (filePath) {
       licenseData = {
         licenseFile: {
-          data: fs.readFileSync(licenseFile.path),
-          contentType: licenseFile.type,
+          data: fs.readFileSync(filePath),
+          contentType: fileType,
         },
       };
-    }    // Update the user's license details
+    }
+
     const user = await userModel.findByIdAndUpdate(
       userId,
       {
         licenseNumber,
-        ...licenseData
-        , // Adds the file path to the user
+        ...licenseData,
       },
-      { new: true } // Returns the updated user
+      { new: true }
     );
 
-    // If the user isn't found
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    res.status(200).json({ success: true, user });
+    res.status(200).json({
+      success: true,
+      message: "Driving license verified and uploaded successfully",
+      verification,
+      user,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
+  }
+};
+
+// 🔍 Real-time Driving License document verification for instant frontend feedback
+export const verifyLicenseDocumentController = async (req, res) => {
+  try {
+    const { licenseNumber } = req.fields || {};
+    const { licenseFile } = req.files || {};
+
+    if (!licenseFile) {
+      return res.status(400).json({ success: false, message: "License file is required" });
+    }
+
+    const fileType = licenseFile.type || licenseFile.mimetype || "";
+    const filePath = licenseFile.path || licenseFile.filepath;
+
+    const verification = await verifyDrivingLicenseDocument(filePath, fileType, licenseNumber);
+
+    res.status(200).json({
+      success: verification.isValid,
+      ...verification,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to verify document",
+      error: error.message,
+    });
   }
 };

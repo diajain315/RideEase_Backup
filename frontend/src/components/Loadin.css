@@ -1,77 +1,171 @@
-.loader {
-     height: 20px;
-    width: 250px;
-    position: absolute;
-    top:55%;
-    left:41%;  
-  }
-  .loader--dot {
-    animation-name: loader;
-    animation-timing-function: ease-in-out;
-    animation-duration: 3s;
-    animation-iteration-count: infinite;
-    height: 20px;
-    width: 20px;
-    border-radius: 100%;
-    background-color: #8B4D3A;
-    position: absolute;
-    border: 2px solid white;
-  }
-  .loader--dot:first-child {
-    background-color: #171717;
-    animation-delay: 0.5s;
-  }
-  .loader--dot:nth-child(2) {
-    background-color: #8B4D3A;
-    animation-delay: 0.4s;
-  }
-  .loader--dot:nth-child(3) {
-    background-color: #171717;
-    animation-delay: 0.3s;
-  }
-  .loader--dot:nth-child(4) {
-    background-color: #8B4D3A;
-    animation-delay: 0.2s;
-  }
-  .loader--dot:nth-child(5) {
-    background-color: #171717;
-    animation-delay: 0.1s;
-  }
-  .loader--dot:nth-child(6) {
-    background-color:#8B4D3A;
-    animation-delay: 0s;
-  }
-  .loader--dot:nth-child(7) {
-    background-color: #171717;
-    animation-delay: 0s;
-  }
-  .loader--dot:nth-child(7) {
-    background-color: #8B4D3A;
-    animation-delay: 0s;
-  }
+/* ========================================================
+   RideEase Animated Cruising Bike & Road Loader
+   ======================================================== */
 
-  
-  @keyframes loader {
-    15% {
-      transform: translateX(0);
-    }
-    45% {
-      transform: translateX(230px);
-    }
-    65% {
-      transform: translateX(230px);
-    }
-    95% {
-      transform: translateX(0);
-    }
-  }
+.bike-loader-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
 
-  @media only screen and (max-width: 600px) {
-    .loader {
-      height: 20px;
-     width: 250px;
-     position: absolute;
-     top:55%;
-     left:19%;  
-   }
+/* Suspension Bobbing */
+.bike-cruiser {
+  position: relative;
+  animation: bikeSuspension 0.7s ease-in-out infinite alternate;
+  transform-origin: bottom center;
+}
+
+@keyframes bikeSuspension {
+  0% {
+    transform: translateY(0px) rotate(0deg);
   }
+  50% {
+    transform: translateY(-3px) rotate(-0.5deg);
+  }
+  100% {
+    transform: translateY(1.5px) rotate(0.5deg);
+  }
+}
+
+/* Wheel Rotation */
+.bike-wheel-spin {
+  animation: wheelRotation 0.6s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes wheelRotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Headlight Glow Beam */
+.bike-headlight-cone {
+  position: absolute;
+  top: 22px;
+  right: -28px;
+  width: 50px;
+  height: 24px;
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.45) 0%, rgba(16, 185, 129, 0) 100%);
+  clip-path: polygon(0% 35%, 100% 0%, 100% 100%, 0% 65%);
+  pointer-events: none;
+  animation: headlightPulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes headlightPulse {
+  0% {
+    opacity: 0.5;
+    transform: scaleX(0.9);
+  }
+  100% {
+    opacity: 0.85;
+    transform: scaleX(1.1);
+  }
+}
+
+/* Speed / Exhaust Trail Lines */
+.bike-speed-trail {
+  position: absolute;
+  left: -20px;
+  top: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.speed-line {
+  height: 2px;
+  background: linear-gradient(270deg, #10B981 0%, transparent 100%);
+  border-radius: 9999px;
+  animation: speedDrift 0.8s ease-out infinite;
+}
+
+.speed-line:nth-child(1) {
+  width: 18px;
+  animation-delay: 0s;
+}
+
+.speed-line:nth-child(2) {
+  width: 28px;
+  animation-delay: 0.25s;
+}
+
+.speed-line:nth-child(3) {
+  width: 14px;
+  animation-delay: 0.45s;
+}
+
+@keyframes speedDrift {
+  0% {
+    transform: translateX(0);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(-35px);
+    opacity: 0;
+  }
+}
+
+/* Road Platform */
+.bike-road-track {
+  position: relative;
+  width: 220px;
+  height: 5px;
+  background: #cbd5e1;
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-top: -3px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+}
+
+.bike-road-stripes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    #10B981 0px,
+    #10B981 22px,
+    #cbd5e1 22px,
+    #cbd5e1 38px
+  );
+  animation: roadTravel 0.55s linear infinite;
+}
+
+@keyframes roadTravel {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Dynamic Tire Ground Shadow */
+.bike-road-shadow {
+  width: 140px;
+  height: 7px;
+  background: radial-gradient(ellipse at center, rgba(15, 23, 42, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+  margin-top: 3px;
+  animation: shadowBreathe 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes shadowBreathe {
+  0% {
+    transform: scaleX(1);
+    opacity: 0.45;
+  }
+  100% {
+    transform: scaleX(0.85);
+    opacity: 0.2;
+  }
+}

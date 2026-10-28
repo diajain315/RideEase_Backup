@@ -1,118 +1,118 @@
-import { Card, Row, Col, Divider, Typography, Button } from "antd";
-import { ArrowRightOutlined } from "@ant-design/icons";
-import "react-lazy-load-image-component/src/effects/blur.css";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPersonBiking } from "@fortawesome/free-solid-svg-icons";
+import { faPersonBiking, faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import { useDispatch, useSelector } from "react-redux";
 import { CategoryAll } from "../redux/features/Category/categoryAction";
-import { useEffect } from "react";
 
-const { Title, Text } = Typography;
+export default function Categories() {
+  const dispatch = useDispatch();
+  const base_url = process.env.REACT_APP_API_URL || "http://localhost:5001";
 
-const Categories = () => {
-
-   const dispatch = useDispatch();
-   const base_url = "http://localhost:5001";
-  
-    useEffect(() => {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      dispatch(CategoryAll());
-    }, [dispatch]);
-
+  useEffect(() => {
+    dispatch(CategoryAll());
+  }, [dispatch]);
 
   const { categories } = useSelector((state) => state.category);
+
   const fallbackCategories = [
     {
-      _id: "activa",
-      name: "Activa",
+      _id: "scooters",
+      name: "Scooters",
       images: "/images/b1fleet.jpg",
+      description: "Easy handling, lightweight, and perfect for bustling Old City streets and narrow lanes.",
       href: "/bikerentsection",
     },
     {
-      _id: "sport-bikes",
-      name: "Sport bikes",
+      _id: "street-bikes",
+      name: "Street Bikes",
       images: "/images/b2fleet.jpg",
+      description: "Fuel efficient, reliable, and comfortable for daily commuting across town.",
       href: "/bikerentsection",
     },
     {
-      _id: "jupiter",
-      name: "Jupiter",
+      _id: "cruisers",
+      name: "Cruisers & Sports",
       images: "/images/b3fleet.jpg",
+      description: "Powerful engines, ergonomic stance, and built for lakefront highway cruises.",
       href: "/bikerentsection",
     },
   ];
+
   const fleetCategories = categories?.length ? categories : fallbackCategories;
 
   return (
-    <div className="bg-gradient-to-b from-[#fff7f0] to-[#fde9dc] py-16 px-4">
-      <div className="max-w-6xl mx-auto">
+    <section className="bg-slate-50 py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
         {/* Section Header */}
-        <div className="text-center mb-12">
-          <Divider className="!h-1 !w-24 !min-w-0 !mx-auto !my-0 !mb-4 bg-gradient-to-r from-[#5a4239] to-orange-900" />
-          <Title className="!text-3xl md:!text-4xl !font-bold !text-orange-900 flex items-center justify-center gap-3 !mb-2">
-            <FontAwesomeIcon icon={faPersonBiking} className="text-orange-900" />
-            Our Fleet
-          </Title>
-          <Text className="!text-lg md:!text-xl !text-[#5a4239] font-[Roboto] block">
-            Explore our premium range of bikes and scooters
-          </Text>
+        <div className="text-center max-w-xl mx-auto mb-12">
+          <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
+            Browse By Type
+          </span>
+          <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
+            Explore Fleet Categories
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Choose the right ride designed for your route and style.
+          </p>
         </div>
 
-        {/* Fleet Cards */}
-        <Row gutter={[24, 24]}>
+        {/* Fleet Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {fleetCategories.map((item) => (
-            <Col xs={24} md={8} key={item._id}>
-              <Card
-                hoverable
-                className={`
-                  w-full h-full
-                  bg-[#8B4D3A] text-[#FFD9A0]
-                  border border-[rgba(255,255,255,0.1)]
-                  rounded-lg overflow-hidden backdrop-blur-md
-                  transition-all duration-300
-                  hover:bg-[#733F30] hover:border-[#f59e0b]
-                  hover:shadow-xl hover:-translate-y-1
-                `}
-                styles={{ body: { padding: 24 } }}
-                cover={
-                  <div className="h-48 md:h-60 w-full overflow-hidden relative group">
-                    <img
-                      alt={item.name}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      src={item.images || `${base_url}/api/v1/category/category-photo/${item._id}`}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-b from-[#6c5049]/70 to-[#6c5049]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  </div>
-                }
-              >
-                <Title 
-                  level={4} 
-                  className="!text-xl md:!text-2xl !font-bold !text-[#FFD9A0] group-hover:!text-orange-900 transition-colors duration-300"
-                >
-                  {item.name}
-                </Title>
-                <Link to={item.href || `/bikerentsection?category=${item._id}`}>
-                  <Button
-                    type="primary"
-                    icon={<ArrowRightOutlined />}
-                    className={`
-                      !bg-[#FFD9A0] !text-orange-900 
-                      font-[Roboto] hover:!bg-[#B36D4E] 
-                      hover:!text-white !mt-6 !h-10 !px-6 
-                      transition-all duration-300 hover:!translate-x-1
-                    `}
+            <div
+              key={item._id}
+              className="group flex flex-col bg-white rounded-3xl border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+            >
+              {/* Image Container */}
+              <div className="relative h-52 w-full overflow-hidden bg-slate-100">
+                <img
+                  alt={item.name}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  src={
+                    item.images ||
+                    `${base_url}/api/v1/category/category-photo/${item._id}`
+                  }
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = "/images/b1fleet.jpg";
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+                <span className="absolute bottom-3 left-4 text-[11px] font-bold uppercase tracking-wider text-emerald-300 bg-slate-950/70 backdrop-blur px-2.5 py-0.5 rounded-md">
+                  Verified Fleet
+                </span>
+              </div>
+
+              {/* Card Body */}
+              <div className="p-6 flex flex-col flex-1 justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-1.5 group-hover:text-emerald-600 transition-colors">
+                    {item.name}
+                  </h3>
+                  <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
+                    {item.description || "Multi-point inspection completed. Ready for immediate pickup across Udaipur."}
+                  </p>
+                </div>
+
+                {/* CTA link */}
+                <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    From ₹400/day
+                  </span>
+                  <Link
+                    to={item.href || `/bikerentsection?category=${item._id}`}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 group-hover:text-emerald-700 transition-colors"
                   >
-                    Enquire Now
-                  </Button>
-                </Link>
-              </Card>
-            </Col>
+                    <span>View Models</span>
+                    <FontAwesomeIcon icon={faArrowRight} className="text-[10px] transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </div>
+              </div>
+            </div>
           ))}
-          </Row>
         </div>
       </div>
+    </section>
   );
-};
-
-export default Categories;
+}

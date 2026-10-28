@@ -1,13 +1,14 @@
 // components/ReviewSection.js
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+//import axios from "axios";
 import { Card, Rate } from "antd";
+import Http from "../Helper/Http";
 
 const ReviewSection = () => {
   const [reviews, setReviews] = useState([]);
 
   useEffect(() => {
-    axios.get("/api/v1/review/all").then((res) => {
+    Http.get("/api/v1/review/all").then((res) => {
       setReviews(res.data.reviews);
     });
   }, []);

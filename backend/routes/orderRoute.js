@@ -1,31 +1,3 @@
-// import express from "express";
-// import { isAdmin, requireSignIn } from "../middlewares/authMiddleware.js";
-// import {
-//   AllOrdersController,
-//   getOrdersController,
-//   makeOrderController,
-//   updateStatusController,
-// } from "../controllers/orderController.js";
-// const router = express.Router();
-
-// router.post("/make-order", requireSignIn, makeOrderController);
-
-// // orders of particular user in customer your order's section
-// router.get("/orders", requireSignIn, getOrdersController);
-
-// // orders of users in admin dashboard
-// router.get("/allorders", requireSignIn, isAdmin, AllOrdersController);
-
-// // order status update by admin
-// router.put(
-//   "/order-status/:orderId",
-//   requireSignIn,
-//   isAdmin,
-//   updateStatusController
-// );
-// export default router;
-
-
 import express from "express";
 import { isAdmin, requireSignIn } from "../middlewares/authMiddleware.js";
 import {
@@ -33,12 +5,15 @@ import {
   getOrdersController,
   makeOrderController,
   updateStatusController,
-  razorpaySuccessController, 
+  razorpaySuccessController,
+  getBikeBookedSlotsController,
 } from "../controllers/orderController.js";
-
-import BikeOrder from "../models/orderModel.js"; // 🔸 Ensure this import exists
+import BikeOrder from "../models/orderModel.js";
 
 const router = express.Router();
+
+// 🔒 Get booked / locked date slots for a specific vehicle (public/user)
+router.get("/bike-booked-slots/:bikeId", getBikeBookedSlotsController);
 
 // 📦 Place Order
 router.post("/make-order", requireSignIn, makeOrderController);
@@ -51,12 +26,12 @@ router.get("/allorders", requireSignIn, isAdmin, AllOrdersController);
 
 // ✅ Admin manually updates order status
 router.put("/order-status/:orderId", requireSignIn, isAdmin, updateStatusController);
+
 // Razorpay payment success route
 router.post("/razorpay-success", razorpaySuccessController);
 
-
 // 🧾 Razorpay: User update after successful payment
-router.put("/update-status/:orderId", async (req, res) => {
+router.put("/update-status/:orderId", requireSignIn, async (req, res) => {
   const { status, paymentId } = req.body;
 
   try {
@@ -70,9 +45,8 @@ router.put("/update-status/:orderId", async (req, res) => {
     }
     res.status(200).json(updatedOrder);
   } catch (error) {
-    res.status(500).json({ message: "Error updating order", error });
+    res.status(500).json({ message: "Error updating order", error: error.message });
   }
 });
 
 export default router;
-

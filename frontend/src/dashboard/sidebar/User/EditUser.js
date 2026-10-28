@@ -11,7 +11,7 @@ import { ValidateEditUser } from "../../Common/Validation";
 import Spinner from "../../Helper/Spinner";
 import { useParams } from "react-router-dom";
 import AddEditWrapper from "../../common/AddEditWrapper";
-const base_url = "http://localhost:5001/";
+const base_url = "http://localhost:5001";
 
 function EditUser() {
   let { id } = useParams();

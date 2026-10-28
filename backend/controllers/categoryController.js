@@ -84,7 +84,7 @@ export const updateCategoryController = async (req, res) => {
 
 export const getAllCategoriesController = async (req, res) => {
   try {
-    const categories = await categoryModel.find({});
+    const categories = await categoryModel.find({}).select("-photo");
     res.status(200).send({
       success: true,
       message: "Successfully fetched all categories",
@@ -101,7 +101,7 @@ export const getAllCategoriesController = async (req, res) => {
 
 export const getSingleCategoryController = async (req, res) => {
   try {
-    const category = await categoryModel.findOne({ slug: req.params.slug });
+    const category = await categoryModel.findOne({ slug: req.params.slug }).select("-photo");
     if (!category) {
       return res.status(400).send({
         message: "No category existing by that name/slug",
@@ -124,7 +124,7 @@ export const getSingleCategoryController = async (req, res) => {
 // by id
 export const getSingleCategoryControllerById = async (req, res) => {
   try {
-    const category = await categoryModel.findOne({ _id: req.params.id });
+    const category = await categoryModel.findOne({ _id: req.params.id }).select("-photo");
     if (!category) {
       return res.status(400).send({
         message: "No category existing by that id",
@@ -166,15 +166,16 @@ export const deleteCategoryController = async (req, res) => {
 export const categoryPhotoController = async (req, res) => {
   try {
     const category = await categoryModel.findById(req.params.cid).select("photo");
-    if (category.photo.data) {
+    if (category && category.photo && category.photo.data) {
       res.set("Content-type", category.photo.contentType);
       return res.status(200).send(category.photo.data);
     }
+    return res.status(404).send({ message: "No photo found" });
   } catch (error) {
     res.status(500).send({
       success: false,
       message: "Error while getting category image",
-      error,
+      error: error.message,
     });
   }
 };

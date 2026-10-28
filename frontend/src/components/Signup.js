@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
@@ -9,7 +8,7 @@ import { clearFields } from "../redux/features/User/authSlice";
 import Error from "../Helper/Error";
 import Layout from "./Layout";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faKey, faUser, faPhone, faEnvelope } from "@fortawesome/free-solid-svg-icons";
+import { faKey, faUser, faPhone, faEnvelope, faUserPlus } from "@fortawesome/free-solid-svg-icons";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -26,29 +25,22 @@ const Signup = () => {
       dispatch(clearFields());
       navigate("/login");
     }
-  }, [success]);
+  }, [success, dispatch, navigate]);
 
   return (
-    <Layout title={"RideEase : Signup"}>
-      <div className="flex items-center justify-center min-h-[calc(100vh-80px)] bg-gradient-to-br from-[#fff7f0] via-[#fde9dc] to-[#f8d9c6] py-8 px-4">
-        {/* Card container with proper spacing */}
-        <div className="w-full max-w-md p-6 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg">
+    <Layout title={"RideEase : Create Account"}>
+      <div className="flex items-center justify-center min-h-[calc(100vh-80px)] bg-slate-50 py-12 px-4 sm:px-6">
+        <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-slate-200/80 p-8 sm:p-10">
           
-          {/* Logo with top spacing */}
-          <div className="flex flex-col items-center mb-6">
-            <Link to="/" className="transition-transform duration-300 hover:scale-105">
-              <img
-                src="../images/BikeForRentFinalLogo.png"
-                alt="RideEase Logo"
-                className="h-20 w-auto"
-              />
-            </Link>
+          {/* Header */}
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+              Create Your Account
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Join RideEase to rent bikes with verified confidence
+            </p>
           </div>
-
-          {/* Heading */}
-          <h2 className="text-xl font-bold text-center text-[#5a4239] mb-6">
-            Sign up for your account
-          </h2>
 
           <Formik
             initialValues={{
@@ -56,8 +48,8 @@ const Signup = () => {
               email: "",
               password: "",
               confirmPassword: "",
-              phone: "", // Added phone number field
-              gender: "", // New field for gender
+              phone: "",
+              gender: "",
             }}
             validationSchema={ValidateUser}
             onSubmit={async (values, actions) => {
@@ -71,14 +63,14 @@ const Signup = () => {
             {(props) => (
               <form onSubmit={props.handleSubmit} className="space-y-4">
                 {/* Username Field */}
-                <div className="group">
-                  <label className="block text-sm font-medium text-[#5a4239]/90 mb-1.5">
-                    Username
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                    Full Name
                   </label>
                   <div className="relative">
                     <FontAwesomeIcon
                       icon={faUser}
-                      className="absolute left-3 top-3 text-[#A15E48] text-sm"
+                      className="absolute left-3.5 top-3.5 text-slate-400 text-sm"
                     />
                     <input
                       id="name"
@@ -88,24 +80,25 @@ const Signup = () => {
                       onChange={props.handleChange}
                       onBlur={props.handleBlur}
                       value={props.values.name || ""}
-                      className="w-full pl-9 pr-3 py-2 text-sm border border-[#DCA689]/70 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#733F30]"
+                      className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800 transition-all font-medium placeholder-slate-400"
+                      placeholder="e.g. John Doe"
                       required
                     />
                   </div>
-                  <span className="text-red-500 text-xs">
+                  <span className="text-red-500 text-xs mt-1 block">
                     <ErrorMessage name="name" />
                   </span>
                 </div>
 
                 {/* Email Field */}
-                <div className="group">
-                  <label className="block text-sm font-medium text-[#5a4239]/90 mb-1.5">
-                    Email address
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                    Email Address
                   </label>
                   <div className="relative">
                     <FontAwesomeIcon
                       icon={faEnvelope}
-                      className="absolute left-3 top-3 text-[#A15E48] text-sm"
+                      className="absolute left-3.5 top-3.5 text-slate-400 text-sm"
                     />
                     <input
                       id="email"
@@ -115,24 +108,25 @@ const Signup = () => {
                       onChange={props.handleChange}
                       onBlur={props.handleBlur}
                       value={props.values.email || ""}
-                      className="w-full pl-9 pr-3 py-2 text-sm border border-[#DCA689]/70 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#733F30]"
+                      className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800 transition-all font-medium placeholder-slate-400"
+                      placeholder="name@example.com"
                       required
                     />
                   </div>
-                  <span className="text-red-500 text-xs">
+                  <span className="text-red-500 text-xs mt-1 block">
                     <ErrorMessage name="email" />
                   </span>
                 </div>
 
                 {/* Phone Field */}
-                <div className="group">
-                  <label className="block text-sm font-medium text-[#5a4239]/90 mb-1.5">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
                     Phone Number
                   </label>
                   <div className="relative">
                     <FontAwesomeIcon
                       icon={faPhone}
-                      className="absolute left-3 top-3 text-[#A15E48] text-sm"
+                      className="absolute left-3.5 top-3.5 text-slate-400 text-sm"
                     />
                     <input
                       id="phone"
@@ -142,113 +136,104 @@ const Signup = () => {
                       onChange={props.handleChange}
                       onBlur={props.handleBlur}
                       value={props.values.phone || ""}
-                      className="w-full pl-9 pr-3 py-2 text-sm border border-[#DCA689]/70 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#733F30]"
+                      className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800 transition-all font-medium placeholder-slate-400"
+                      placeholder="10-digit mobile number"
                       required
                     />
                   </div>
-                  <span className="text-red-500 text-xs">
+                  <span className="text-red-500 text-xs mt-1 block">
                     <ErrorMessage name="phone" />
                   </span>
                 </div>
 
-                {/* Password Field */}
-                <div className="group">
-                  <label className="block text-sm font-medium text-[#5a4239]/90 mb-1.5">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <FontAwesomeIcon
-                      icon={faKey}
-                      className="absolute left-3 top-3 text-[#A15E48] text-sm"
-                    />
-                    <input
-                      id="password"
-                      name="password"
-                      type="password"
-                      autoComplete="new-password"
-                      onChange={props.handleChange}
-                      onBlur={props.handleBlur}
-                      value={props.values.password || ""}
-                      className="w-full pl-9 pr-3 py-2 text-sm border border-[#DCA689]/70 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#733F30]"
-                      required
-                    />
+                {/* Password Fields Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Password Field */}
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <FontAwesomeIcon
+                        icon={faKey}
+                        className="absolute left-3.5 top-3.5 text-slate-400 text-sm"
+                      />
+                      <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        autoComplete="new-password"
+                        onChange={props.handleChange}
+                        onBlur={props.handleBlur}
+                        value={props.values.password || ""}
+                        className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800 transition-all font-medium placeholder-slate-400"
+                        placeholder="••••••••"
+                        required
+                      />
+                    </div>
+                    <span className="text-red-500 text-xs mt-1 block">
+                      <ErrorMessage name="password" />
+                    </span>
                   </div>
-                  <span className="text-red-500 text-xs">
-                    <ErrorMessage name="password" />
-                  </span>
-                </div>
 
-                {/* Confirm Password Field */}
-                <div className="group">
-                  <label className="block text-sm font-medium text-[#5a4239]/90 mb-1.5">
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <FontAwesomeIcon
-                      icon={faKey}
-                      className="absolute left-3 top-3 text-[#A15E48] text-sm"
-                    />
-                    <input
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      type="password"
-                      autoComplete="new-password"
-                      onChange={props.handleChange}
-                      onBlur={props.handleBlur}
-                      value={props.values.confirmPassword || ""}
-                      className="w-full pl-9 pr-3 py-2 text-sm border border-[#DCA689]/70 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#733F30]"
-                      required
-                    />
+                  {/* Confirm Password Field */}
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                      Confirm Password
+                    </label>
+                    <div className="relative">
+                      <FontAwesomeIcon
+                        icon={faKey}
+                        className="absolute left-3.5 top-3.5 text-slate-400 text-sm"
+                      />
+                      <input
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type="password"
+                        autoComplete="new-password"
+                        onChange={props.handleChange}
+                        onBlur={props.handleBlur}
+                        value={props.values.confirmPassword || ""}
+                        className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800 transition-all font-medium placeholder-slate-400"
+                        placeholder="••••••••"
+                        required
+                      />
+                    </div>
+                    <span className="text-red-500 text-xs mt-1 block">
+                      <ErrorMessage name="confirmPassword" />
+                    </span>
                   </div>
-                  <span className="text-red-500 text-xs">
-                    <ErrorMessage name="confirmPassword" />
-                  </span>
                 </div>
 
                 {/* Gender Radio Buttons */}
-                <div className="group">
-                  <label className="block text-sm font-medium text-[#5a4239]/90 mb-1.5">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">
                     Gender
                   </label>
-                  <div className="relative">
-                    <label className="inline-flex items-center mr-4">
-                      <input
-                        type="radio"
-                        name="gender"
-                        value="male"
-                        onChange={props.handleChange}
-                        onBlur={props.handleBlur}
-                        checked={props.values.gender === "male"}
-                        className="mr-2"
-                      />
-                      Male
-                    </label>
-                    <label className="inline-flex items-center mr-4">
-                      <input
-                        type="radio"
-                        name="gender"
-                        value="female"
-                        onChange={props.handleChange}
-                        onBlur={props.handleBlur}
-                        checked={props.values.gender === "female"}
-                        className="mr-2"
-                      />
-                      Female
-                    </label>
-                    <label className="inline-flex items-center mr-4">
-                      <input
-                        type="radio"
-                        name="gender"
-                        value="other"
-                        onChange={props.handleChange}
-                        onBlur={props.handleBlur}
-                        checked={props.values.gender === "other"}
-                        className="mr-2"
-                      />
-                      Other
-                    </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {["male", "female", "other"].map((g) => (
+                      <label
+                        key={g}
+                        className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-semibold capitalize cursor-pointer transition-all ${
+                          props.values.gender === g
+                            ? "border-emerald-500 bg-emerald-50/60 text-emerald-800 ring-1 ring-emerald-500"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="gender"
+                          value={g}
+                          onChange={props.handleChange}
+                          onBlur={props.handleBlur}
+                          checked={props.values.gender === g}
+                          className="accent-emerald-600"
+                        />
+                        {g}
+                      </label>
+                    ))}
                   </div>
-                  <span className="text-red-500 text-xs">
+                  <span className="text-red-500 text-xs mt-1 block">
                     <ErrorMessage name="gender" />
                   </span>
                 </div>
@@ -257,20 +242,21 @@ const Signup = () => {
 
                 <button
                   type="submit"
-                  className="w-full py-2.5 px-4 mt-5 bg-gradient-to-r from-[#8B4D3A] to-[#A15E48] text-white rounded-lg hover:from-[#733F30] hover:to-[#8B4D3A] focus:outline-none focus:ring-1 focus:ring-[#733F30]"
+                  className="w-full py-3 px-4 mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
                   disabled={props.isSubmitting}
                 >
-                  {props.isSubmitting ? "Signing up..." : "Sign up"}
+                  <FontAwesomeIcon icon={faUserPlus} />
+                  {props.isSubmitting ? "Creating Account..." : "Create Account"}
                 </button>
               </form>
             )}
           </Formik>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-[#5a4239]/80">
+          <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+            <p className="text-xs text-slate-500">
               Already have an account?{" "}
-              <Link to="/login" className="text-[#8B4D3A] hover:underline font-medium">
-                Login
+              <Link to="/login" className="text-emerald-600 hover:text-emerald-700 font-semibold transition-colors">
+                Sign in here
               </Link>
             </p>
           </div>

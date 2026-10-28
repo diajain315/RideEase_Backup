@@ -1,289 +1,162 @@
 import React, { useEffect } from "react";
-import Layout from "./Layout";
 import { useDispatch, useSelector } from "react-redux";
 import { GetOrder } from "../redux/features/Order/orderAction";
+import { Table, Tag } from "antd";
+import { Link } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faMotorcycle, faCalendarAlt, faListCheck, faArrowRight } from "@fortawesome/free-solid-svg-icons";
+import Layout from "./Layout";
+import moment from "moment";
 
-// Function to format date to dd/mm/yyyy
-const formatDate = (date) => {
-  const d = new Date(date);
-  const day = ("0" + d.getDate()).slice(-2); // Adds leading zero if day is a single digit
-  const month = ("0" + (d.getMonth() + 1)).slice(-2); // Adds leading zero if month is a single digit
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
+const statusColors = {
+  "Not Processed": "orange",
+  Processing: "blue",
+  Shipped: "cyan",
+  Delivered: "emerald",
+  Cancelled: "red",
 };
 
-const OrderDropdown = ({ color }) => {
+const OrderDropdown = () => {
   const dispatch = useDispatch();
-  const { userOrders } = useSelector((state) => state.order);
-  console.log('18:',userOrders)
+  const { userOrders, loading } = useSelector((state) => state.order);
+
   useEffect(() => {
     dispatch(GetOrder());
   }, [dispatch]);
-  
+
+  const columns = [
+    {
+      title: "S.N.",
+      key: "sn",
+      render: (_, __, index) => <span className="text-xs text-slate-400 font-semibold">{index + 1}</span>,
+      width: 60,
+      align: "center",
+    },
+    {
+      title: "Rented Vehicle",
+      key: "bike",
+      render: (_, record) => (
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm shrink-0">
+            <FontAwesomeIcon icon={faMotorcycle} />
+          </div>
+          <div>
+            <div className="font-bold text-slate-900 text-xs sm:text-sm">
+              {record.bikes?.name || "Vehicle"}
+            </div>
+            <span className="text-[11px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+              {record.bikes?.number || "—"}
+            </span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Rental Duration",
+      key: "duration",
+      render: (_, record) => (
+        <div className="text-xs text-slate-600 space-y-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] uppercase font-semibold text-slate-400">From:</span>
+            <span className="font-medium text-slate-700">
+              {record.startDate ? moment(record.startDate).format("DD MMM YYYY") : "—"}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] uppercase font-semibold text-slate-400">To:</span>
+            <span className="font-medium text-slate-700">
+              {record.endDate ? moment(record.endDate).format("DD MMM YYYY") : "—"}
+            </span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Tariff Paid",
+      dataIndex: "totalAmt",
+      key: "totalAmt",
+      align: "center",
+      render: (amt) => (
+        <span className="font-bold text-emerald-600 text-xs sm:text-sm">
+          ₹{amt || 0}
+        </span>
+      ),
+    },
+    {
+      title: "Booking Status",
+      dataIndex: "status",
+      key: "status",
+      align: "center",
+      render: (status) => (
+        <Tag color={statusColors[status] || "default"} className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
+          {status || "Confirmed"}
+        </Tag>
+      ),
+    },
+  ];
+
   return (
-    <Layout title={"RideEase: Your Orders"}>
-      <div className="flex items-center justify-center">
-        <h1 className="font-serif text-2xl font-bold">Your Orders</h1>
-      </div>
-      <div className="flex items-center justify-center w-full mt-3">
-        <div style={{ maxHeight: "300px", overflowY: "auto" }}>
-          <table className="items-center w-full bg-white border-collapse">
-            <thead>
-              <tr>
-                <th
-                  className={
-                    "px-6 border flex items-center justify-center border-solid py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold " +
-                    (color === "light"
-                      ? "bg-blueGray-50 text-blueGray-500 border-blueGray-100"
-                      : "bg-lightBlue-800 text-lightBlue-300 border-lightBlue-700")
-                  }
-      
+    <Layout title="RideEase : My Bookings">
+      <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold tracking-wide uppercase mb-2">
+                <FontAwesomeIcon icon={faListCheck} className="text-emerald-500" />
+                Booking Ledger
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                My Rental Bookings
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                View your confirmed ride history, active rentals, and receipts
+              </p>
+            </div>
+
+            <Link
+              to="/bikerentsection"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-md shadow-emerald-600/20 transition-all"
+            >
+              <span>Explore Fleet</span>
+              <FontAwesomeIcon icon={faArrowRight} className="text-xs" />
+            </Link>
+          </div>
+
+          {/* Bookings Card */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+            {userOrders && userOrders.length > 0 ? (
+              <div className="overflow-x-auto">
+                <Table
+                  dataSource={userOrders}
+                  columns={columns}
+                  rowKey="_id"
+                  loading={loading}
+                  pagination={{ pageSize: 8, showSizeChanger: true }}
+                />
+              </div>
+            ) : (
+              <div className="py-16 px-4 text-center">
+                <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center text-2xl mb-4">
+                  <FontAwesomeIcon icon={faMotorcycle} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800">No Rental Bookings Yet</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-6">
+                  You haven't rented any two-wheelers yet. Find your ride and hit the open road today!
+                </p>
+                <Link
+                  to="/bikerentsection"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-md transition-all"
                 >
-                  SN
-                </th>
-                <th
-                  className={
-                    "px-6 align-middle border border-solid py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left " +
-                    (color === "light"
-                      ? "bg-blueGray-50 text-blueGray-500 border-blueGray-100"
-                      : "bg-lightBlue-800 text-lightBlue-300 border-lightBlue-700")
-                  }
-                  
-                >
-                  Bikename
-                </th>
-                <th
-                  className={
-                    "px-6 align-middle border border-solid py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left " +
-                    (color === "light"
-                      ? "bg-blueGray-50 text-blueGray-500 border-blueGray-100"
-                      : "bg-lightBlue-800 text-lightBlue-300 border-lightBlue-700")
-                  }
-                  
-                >
-                  Bike_number
-                </th>
-                <th
-                  className={
-                    "px-6 align-middle border border-solid py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-center " +
-                    (color === "light"
-                      ? "bg-blueGray-50 text-blueGray-500 border-blueGray-100"
-                      : "bg-lightBlue-800 text-lightBlue-300 border-lightBlue-700")
-                  }
-                  
-                >
-                  Renter name
-                </th>
-                <th
-                  className={
-                    "px-6 align-middle border border-solid py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-center " +
-                    (color === "light"
-                      ? "bg-blueGray-50 text-blueGray-500 border-blueGray-100"
-                      : "bg-lightBlue-800 text-lightBlue-300 border-lightBlue-700")
-                  }
-                  
-                >
-                  Total Amount
-                </th>
-                <th
-                  className={
-                    "px-6 align-middle border border-solid py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-center " +
-                    (color === "light"
-                      ? "bg-blueGray-50 text-blueGray-500 border-blueGray-100"
-                      : "bg-lightBlue-800 text-lightBlue-300 border-lightBlue-700")
-                  }
-                  
-                >
-                  Start Date
-                </th>
-                <th
-                  className={
-                    "px-6 align-middle border border-solid py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-center " +
-                    (color === "light"
-                      ? "bg-blueGray-50 text-blueGray-500 border-blueGray-100"
-                      : "bg-lightBlue-800 text-lightBlue-300 border-lightBlue-700")
-                  }
-                  
-                >
-                  End Date
-                </th>
-                <th
-                  className={
-                    "px-6 align-middle border border-solid py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-center " +
-                    (color === "light"
-                      ? "bg-blueGray-50 text-blueGray-500 border-blueGray-100"
-                      : "bg-lightBlue-800 text-lightBlue-300 border-lightBlue-700")
-                  }
-                  
-                >
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {userOrders && userOrders.length !== 0 ? (
-                userOrders.map((order, i) => {
-                  return (
-                    <tr key={order._id}>
-                      <td className="items-center p-4 px-6 text-left align-middle border-t-0 border-l-0 border-r-0 text-md whitespace-nowrap">
-                        {i + 1}
-                      </td>
-                      <td className="items-center p-4 px-6 text-left align-middle border-t-0 border-l-0 border-r-0 text-md whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          {order.bikes.name ? order.bikes.name : "N/A"}
-                        </div>
-                      </td>
-                      <td className="items-center p-4 px-6 text-left align-middle border-t-0 border-l-0 border-r-0 text-md whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          {order.bikes.number ? order.bikes.number : "N/A"}
-                        </div>
-                      </td>
-                      <td className="items-center p-4 px-6 text-center align-middle border-t-0 border-l-0 border-r-0 text-md whitespace-nowrap">
-                        {order.renter.name}
-                      </td>
-                      <td className="items-center p-4 px-6 text-center align-middle border-t-0 border-l-0 border-r-0 text-md whitespace-nowrap">
-                        {order.totalAmt}
-                      </td>
-                      <td className="items-center p-4 px-6 text-center align-middle border-t-0 border-l-0 border-r-0 text-md whitespace-nowrap">
-                        {order.startDate ? formatDate(order.startDate) : "N/A"}
-                      </td>
-                      <td className="items-center p-4 px-6 text-center align-middle border-t-0 border-l-0 border-r-0 text-md whitespace-nowrap">
-                        {order.endDate ? formatDate(order.endDate) : "N/A"}
-                      </td>
-                      <td className="items-center p-4 px-6 text-center align-middle border-t-0 border-l-0 border-r-0 text-md whitespace-nowrap">
-                        {order.status}
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr className="text-center border">
-                  <td colSpan={5} className="p-3 font-bold text-red-500">
-                    No Data Found!!
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                  Browse Available Bikes
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </Layout>
-    
   );
 };
+
 export default OrderDropdown;
-
-
-
-// import React, { useEffect } from "react";
-// import { useDispatch, useSelector } from "react-redux";
-// import { GetOrder } from "../redux/features/Order/orderAction";
-// import { Table, Card, Typography, Tag, Empty } from "antd";
-// import Layout from "./Layout";
-
-// const { Title } = Typography;
-
-// // Format date to dd/mm/yyyy
-// const formatDate = (date) => {
-//   const d = new Date(date);
-//   const day = ("0" + d.getDate()).slice(-2);
-//   const month = ("0" + (d.getMonth() + 1)).slice(-2);
-//   const year = d.getFullYear();
-//   return `${day}/${month}/${year}`;
-// };
-
-// const OrderDropdown = () => {
-//   const dispatch = useDispatch();
-//   const { userOrders } = useSelector((state) => state.order);
-
-//   useEffect(() => {
-//     dispatch(GetOrder());
-//   }, [dispatch]);
-
-//   const columns = [
-//     {
-//       title: "SN",
-//       dataIndex: "sn",
-//       key: "sn",
-//       render: (text, record, index) => index + 1,
-//       fixed: "left",
-//       width: 60,
-//     },
-//     {
-//       title: "Bike Name",
-//       dataIndex: ["bikes", "name"],
-//       key: "bikeName",
-//       render: (name) => name || "N/A",
-//     },
-//     {
-//       title: "Bike Number",
-//       dataIndex: ["bikes", "number"],
-//       key: "bikeNumber",
-//       render: (num) => num || "N/A",
-//     },
-//     {
-//       title: "Renter Name",
-//       dataIndex: ["renter", "name"],
-//       key: "renterName",
-//     },
-//     {
-//       title: "Total Amount",
-//       dataIndex: "totalAmt",
-//       key: "totalAmt",
-//       render: (amt) => `₹${amt}`,
-//     },
-//     {
-//       title: "Start Date",
-//       dataIndex: "startDate",
-//       key: "startDate",
-//       render: (date) => (date ? formatDate(date) : "N/A"),
-//     },
-//     {
-//       title: "End Date",
-//       dataIndex: "endDate",
-//       key: "endDate",
-//       render: (date) => (date ? formatDate(date) : "N/A"),
-//     },
-//     {
-//       title: "Status",
-//       dataIndex: "status",
-//       key: "status",
-//       render: (status) => (
-//         <Tag color={status === "completed" ? "green" : status === "pending" ? "orange" : "blue"}>
-//           {status?.toUpperCase()}
-//         </Tag>
-//       ),
-//     },
-//   ];
-
-//   return (
-//     <Layout title="Bike-4-Rent : Your Orders">
-//       <div className="flex justify-center mt-6 px-4">
-//         <Card style={{ width: "100%", maxWidth: "1200px" }}>
-//           <Title level={3} style={{ textAlign: "center", fontFamily: "serif" }}>
-//             Your Orders
-//           </Title>
-
-//           {userOrders && userOrders.length > 0 ? (
-//             <Table
-//               dataSource={userOrders}
-//               columns={columns}
-//               rowKey="_id"
-//               pagination={false}
-//               scroll={{ y: 400, x: "max-content" }} // Enables vertical + horizontal scroll
-//               bordered
-//               sticky
-//             />
-//           ) : (
-//             <Empty
-//               description={<span className="text-red-500 font-semibold">No Orders Found</span>}
-//               style={{ marginTop: 50 }}
-//             />
-//           )}
-//         </Card>
-//       </div>
-//     </Layout>
-//   );
-// };
-
-// export default OrderDropdown;

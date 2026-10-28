@@ -175,13 +175,13 @@
       //     match: { name: category },
       //   });
       // } else {
-      //   query = query.populate("category");
+      //   query = query.populate("category", "-photo");
       // }
       // const bikes = await query.select("-photo").sort({ createdAt: -1 });
       // const filteredBikes = bikes.filter((bike) => bike.category !== null);
       const bikes = await bikeModel
         .find({})
-        .populate("category")
+        .populate("category", "-photo")
         .select("-photo")
         .limit(10)
         .sort({ createdAt: -1 });
@@ -206,7 +206,7 @@
       const bike = await bikeModel
         .findOne({ slug: req.params.slug })
         .select("-photo")
-        .populate("category");
+        .populate("category", "-photo");
       res.status(200).send({
         success: true,
         message: "Successfully fetched bike",
@@ -227,7 +227,7 @@
       const bike = await bikeModel
         .findOne({ _id: req.params.bid })
         .select("-photo")
-        .populate("category");
+        .populate("category", "-photo");
       res.status(200).send({
         success: true,
         message: "Successfully fetched bike",
@@ -245,40 +245,45 @@
   // updatebikecontroller
   export const updateBikeController = async (req, res) => {
     try {
-      const { name, description, price, category, kilometers, startType,year,petrolCapacity  } = req.fields;
-      const { photo } = req.files;
-      //    validation
-      switch (true) {
-        case !name:
-          return res.status(422).send({ message: "Name is required" });
-        case !description:
-          return res.status(422).send({ message: "Description is required" });
-        case !price:
-          return res.status(422).send({ message: "Price is required" });
-        case !category:
-          return res.status(422).send({ message: "Category is required" });
-          case !startType:
-            return res.status(422).send({ message: "Start type is required" });
-          case !year:
-            return res.status(422).send({ message: "year is required" });
-          case !kilometers:
-            return res.status(422).send({ message: "Kilometers is required" });
-          case !petrolCapacity:
-            return res.status(422).send({ message: "Petrol capacity is required" });
-        case !photo && photo.size > 50000:
-          return res
-            .status(422)
-            .send({ message: "Image is required & should be less than 5Mb" });
+      const { name, description, price, category, kilometers, startType, year, petrolCapacity } = req.fields;
+      const { photo } = req.files || {};
+      
+      if (!name) return res.status(422).send({ message: "Name is required" });
+      if (!description) return res.status(422).send({ message: "Description is required" });
+      if (!price) return res.status(422).send({ message: "Price is required" });
+      if (!category) return res.status(422).send({ message: "Category is required" });
+      if (!startType) return res.status(422).send({ message: "Start type is required" });
+      if (!year) return res.status(422).send({ message: "Year is required" });
+      if (!kilometers) return res.status(422).send({ message: "Kilometers is required" });
+      if (!petrolCapacity) return res.status(422).send({ message: "Petrol capacity is required" });
+      if (photo && photo.size > 5000000) {
+        return res.status(422).send({ message: "Image should be less than 5Mb" });
       }
-      const bike = await bikeModel.findByIdAndUpdate(
-        req.params.bid,
-        { ...req.fields, slug: slugify(name) },
-        { new: true }
-      );
-      if (photo) {
-        bike.photo.data = fs.readFileSync(photo.path);
-        bike.photo.contentType = photo.type;
+
+      const bike = await bikeModel.findById(req.params.bid);
+      if (!bike) {
+        return res.status(404).send({ success: false, message: "Bike not found" });
       }
+
+      Object.assign(bike, {
+        name,
+        description,
+        price,
+        category,
+        kilometers,
+        startType,
+        year,
+        petrolCapacity,
+        slug: slugify(name),
+      });
+
+      if (photo && photo.path) {
+        bike.photo = {
+          data: fs.readFileSync(photo.path),
+          contentType: photo.type,
+        };
+      }
+
       await bike.save();
       res.status(200).send({
         success: true,
@@ -289,7 +294,7 @@
       res.status(500).send({
         success: false,
         message: "Error in updating bike",
-        error,
+        error: error.message,
       });
     }
   };
@@ -313,15 +318,16 @@
   export const bikePhotoController = async (req, res) => {
     try {
       const bike = await bikeModel.findById(req.params.bid).select("photo");
-      if (bike.photo.data) {
+      if (bike && bike.photo && bike.photo.data) {
         res.set("Content-type", bike.photo.contentType);
         return res.status(200).send(bike.photo.data);
       }
+      return res.status(404).send({ message: "No photo found" });
     } catch (error) {
       res.status(500).send({
         success: false,
         message: "Error while getting bike image",
-        error,
+        error: error.message,
       });
     }
   };
@@ -329,13 +335,13 @@
   // bikefilter controller
   export const bikeFilterController = async (req, res) => {
     try {
-      const { checked, radio } = req.body;
+      const { checked = [], radio = [] } = req.body || {};
       let args = {};
-      if (checked.length > 0) args.category = checked;
-      if (radio.length) args.price = { $gte: radio[0], $lte: radio[1] };
+      if (Array.isArray(checked) && checked.length > 0) args.category = { $in: checked };
+      if (Array.isArray(radio) && radio.length === 2) args.price = { $gte: radio[0], $lte: radio[1] };
       const bikes = await bikeModel
         .find(args)
-        .populate("category")
+        .populate("category", "-photo")
         .select("-photo");
       res.status(200).send({
         success: true,
@@ -346,51 +352,52 @@
       res.status(500).send({
         success: false,
         message: "Error while filtering bikes",
-        error,
+        error: error.message,
       });
     }
   };
 
   // bike count
-  // export const bikeCountController = async (req, res) => {
-  //   try {
-  //     const total = await bikeModel.find({}).estimatedDocumentCount();
-  //     res.status(200).send({
-  //       success: true,
-  //       total,
-  //     });
-  //   } catch (error) {
-  //     console.log(error);
-  //     res.status(500).send({
-  //       success: false,
-  //       message: "Something went wrong",
-  //       error,
-  //     });
-  //   }
-  // };
+export const bikeCountController = async (req, res) => {
+  try {
+    const total = await bikeModel.find({}).estimatedDocumentCount();
+    res.status(200).send({
+      success: true,
+      total,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+};
 
-  // bike per page
-  // export const bikeListController = async (req, res) => {
-  //   try {
-  //     const perPage = 8;
-  //     const page = req.params.page ? req.params.page : 1;
-  //     const bikes = await bikeModel
-  //       .find({})
-  //       .select("-photo")
-  //       .skip((page - 1) * perPage)
-  //       .limit(perPage)
-  //       .sort({ createdAt: -1 });
-  //     res.status(200).send({
-  //       success: true,
-  //       message: "Successfully fetched products per page",
-  //       bikes,
-  //     });
-  //   } catch (error) {
-  //     console.log(error);
-  //     res.status(400).send({
-  //       success: false,
-  //       message: "Error in fetching per page",
-  //       error,
-  //     });
-  //   }
-  // };
+// bike per page
+export const bikeListController = async (req, res) => {
+  try {
+    const perPage = 8;
+    const page = req.params.page ? req.params.page : 1;
+    const bikes = await bikeModel
+      .find({})
+      .select("-photo")
+      .populate("category", "-photo")
+      .skip((page - 1) * perPage)
+      .limit(perPage)
+      .sort({ createdAt: -1 });
+    res.status(200).send({
+      success: true,
+      message: "Successfully fetched products per page",
+      bikes,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(400).send({
+      success: false,
+      message: "Error in fetching per page",
+      error: error.message,
+    });
+  }
+};

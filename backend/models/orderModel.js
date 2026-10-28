@@ -17,10 +17,14 @@ const orderSchema = new mongoose.Schema(
       enum: [
         "Not Processed",
         "Processing",
+        "Shipped",
+        "Delivered",
         "Cancelled",
-        //"Delivered",
-        //"Cancelled",
       ],
+    },
+    paymentId: {
+      type: String,
+      default: "",
     },
     totalAmt: {
       type: Number,

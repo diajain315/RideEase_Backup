@@ -39,8 +39,10 @@
 import { instance } from "../server.js"
 export const processPayment = async (req, res) => {
     try {
+      const rawAmount = Number(req.body.amount);
+      const validAmount = isNaN(rawAmount) || rawAmount <= 0 ? 100 : rawAmount;
       const options = {
-        amount: Number(req.body.amount * 100), // Razorpay expects amount in paise
+        amount: Math.round(validAmount * 100), // in paise
         currency: "INR"
       };    
   

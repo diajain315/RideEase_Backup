@@ -1,135 +1,18 @@
-// import React, { useEffect } from "react";
-// import { useDispatch, useSelector } from "react-redux";
-// import { userAll } from "../../../redux/features/User/authAction";
-
-// const UserTable = () => {
-//   const dispatch = useDispatch();
-
-//   useEffect(() => {
-//     dispatch(userAll());
-//   }, [dispatch]);
-
-//   const { users } = useSelector((state) => state.auth);
-
-//   return (
-//     <div style={{ maxHeight: "300px", overflowY: "auto" }}>
-//       <table className='items-center w-full bg-transparent border-collapse'>
-//         <thead>
-//           <tr>
-//             <th className='px-6 py-3 text-xs font-semibold text-center uppercase border border-solid bg-lightBlue-800 text-lightBlue-300 border-lightBlue-700'>
-//               Name
-//             </th>
-//             <th className='px-6 py-3 text-xs font-semibold text-center uppercase border border-solid bg-lightBlue-800 text-lightBlue-300 border-lightBlue-700'>
-//               Email
-//             </th>
-//             <th className='px-6 py-3 text-xs font-semibold text-center uppercase border border-solid bg-lightBlue-800 text-lightBlue-300 border-lightBlue-700'>
-//               Role
-//             </th>
-//           </tr>
-//         </thead>
-//         <tbody>
-//           {users && users.length > 0 ? (
-//             users.map((user) => (
-//               <tr key={user._id}>
-//                 <td className='p-4 px-6 text-md whitespace-nowrap border-t-0 border-l-0 border-r-0'>
-//                   <div className='flex justify-center'>{user.name}</div>
-//                 </td>
-//                 <td className='p-4 px-6 text-md text-center whitespace-nowrap border-t-0 border-l-0 border-r-0'>
-//                   {user.email}
-//                 </td>
-//                 <td className='p-4 px-6 text-md text-center whitespace-nowrap border-t-0 border-l-0 border-r-0'>
-//                   {user.role === 1 ? "Admin" : "User"}
-//                 </td>
-//               </tr>
-//             ))
-//           ) : (
-//             <tr className='text-center border'>
-//               <td colSpan={3} className='p-3 font-bold text-red-500'>
-//                 No Data Found!!
-//               </td>
-//             </tr>
-//           )}
-//         </tbody>
-//       </table>
-//     </div>
-//   );
-// };
-
-// export default UserTable;
-
-
-// import React, { useEffect } from "react";
-// import { Table } from "antd";
-// import { useDispatch, useSelector } from "react-redux";
-// import { userAll } from "../../../redux/features/User/authAction";
-
-
-// const UserTable = () => {
-//   const dispatch = useDispatch();
-
-//   useEffect(() => {
-//     dispatch(userAll());
-//   }, [dispatch]);
-
-//   const { users, loading } = useSelector((state) => state.auth);
-
-//   const columns = [
-//     {
-//       title: "Name",
-//       dataIndex: "name",
-//       key: "name",
-//       align: "center",
-//     },
-//     {
-//       title: "Email",
-//       dataIndex: "email",
-//       key: "email",
-//       align: "center",
-//     },
-//     {
-//       title: "Role",
-//       dataIndex: "role",
-//       key: "role",
-//       align: "center",
-//       render: (role) => (role === 1 ? "Admin" : "User"),
-//     },
-//   ];
-
-//   const dataSource = users?.map((user, index) => ({
-//     key: user._id || index,
-//     name: user.name,
-//     email: user.email,
-//     role: user.role,
-//   }));
-
-//   return (
-//     <div style={{ height: "calc(100vh - 180px)", overflow: "auto" }}>
-//       <Table
-//         columns={columns}
-//         dataSource={dataSource}
-//         loading={loading}
-//         pagination={false}
-//         scroll={{ y: "100%" }}
-//         bordered
-//         locale={{
-//           emptyText: <span style={{ color: "red", fontWeight: "bold" }}>No Data Found!!</span>,
-//         }}
-//       />
-//     </div>
-//   );
-// };
-
-// export default UserTable;  // 61 start... perfect code
-
 import React, { useEffect } from "react";
-import { Table } from "antd";
+import { Table, Tag, Tooltip, Button } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { userAll } from "../../../redux/features/User/authAction";
-import { Link, useNavigate } from "react-router-dom";
+import {
+  UserOutlined,
+  ReloadOutlined,
+  ShoppingCartOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined
+} from "@ant-design/icons";
+import moment from "moment";
 
 const UserTable = ({ searchText = "" }) => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
 
   useEffect(() => {
     dispatch(userAll());
@@ -139,52 +22,99 @@ const UserTable = ({ searchText = "" }) => {
 
   // Filter users based on searchText (case-insensitive match on name or email)
   const filteredUsers = users?.filter((user) =>
-    user.name.toLowerCase().includes(searchText.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchText.toLowerCase())
+    user.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchText.toLowerCase()) ||
+    user.phone?.includes(searchText)
   );
 
   const columns = [
     {
-      title: "Name",
-      dataIndex: "name",
+      title: "User",
       key: "name",
-      align: "center",
-    },
-    {
-      title: "Email",
-      dataIndex: "email",
-      key: "email",
-      align: "center",
+      render: (_, record) => (
+        <div className="flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold shrink-0">
+            {(record.name || "U").charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <div className="font-semibold text-slate-800 text-xs sm:text-sm">
+              {record.name || "—"}
+            </div>
+            <div className="text-slate-500 text-[11px] font-mono">
+              {record.email}
+            </div>
+          </div>
+        </div>
+      ),
     },
     {
       title: "Role",
       dataIndex: "role",
       key: "role",
       align: "center",
-      render: (role) => (role === 1 ? "Admin" : "User"),
+      render: (role) => (
+        <Tag
+          color={role === 1 ? "emerald" : "blue"}
+          className="rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider"
+        >
+          {role === 1 ? "Admin" : "Customer"}
+        </Tag>
+      ),
     },
     {
-      title: "Gender",
-      dataIndex: "gender",
-      key: "gender",
+      title: "Bookings",
+      key: "ordersCount",
       align: "center",
+      render: (_, record) => {
+        const count = record.ordersCount || 0;
+        return count > 0 ? (
+          <Tag color="purple" className="rounded-full px-2.5 py-0.5 text-xs font-semibold flex items-center gap-1 w-fit mx-auto">
+            <ShoppingCartOutlined /> {count} {count === 1 ? "Rental" : "Rentals"}
+          </Tag>
+        ) : (
+          <span className="text-xs text-slate-400">0 Rentals</span>
+        );
+      },
     },
     {
       title: "Phone",
       dataIndex: "phone",
       key: "phone",
-      align: "center",
+      render: (phone) => <span className="text-xs text-slate-700 font-mono">{phone || "—"}</span>,
     },
     {
-      title: "License Number",
+      title: "Driver License",
       dataIndex: "licenseNumber",
       key: "licenseNumber",
       align: "center",
-      render: (license) => license ? license : "-",
+      render: (license) => (
+        license ? (
+          <span className="text-xs font-mono font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+            {license}
+          </span>
+        ) : (
+          <span className="text-xs text-slate-400">Not Uploaded</span>
+        )
+      ),
     },
-   
-
-
+    {
+      title: "Registered Date",
+      key: "createdAt",
+      render: (_, record) => (
+        record.createdAt ? (
+          <div className="text-xs text-slate-600">
+            <div className="font-medium text-slate-800">
+              {moment(record.createdAt).format("DD MMM YYYY, hh:mm A")}
+            </div>
+            <div className="text-[10px] text-slate-400">
+              {moment(record.createdAt).fromNow()}
+            </div>
+          </div>
+        ) : (
+          <span className="text-xs text-slate-400">—</span>
+        )
+      ),
+    },
   ];
 
   const dataSource = filteredUsers?.map((user, index) => ({
@@ -195,58 +125,41 @@ const UserTable = ({ searchText = "" }) => {
     gender: user.gender,
     phone: user.phone,
     licenseNumber: user.licenseNumber,
-    //licenseFile: user.licenseFile,
+    ordersCount: user.ordersCount || 0,
+    createdAt: user.createdAt,
   }));
 
   return (
-    <div style={{ height: "calc(100vh - 180px)", overflow: "auto" }}>
-      <button
-        onClick={() => navigate('/admin')}
-        style={{
-          position: 'absolute',
-          top: '645px',
-          left: '10px',
-          backgroundColor: '#A15E48',
-          color: 'White',
-          padding: '8px 16px',
-          borderRadius: '4px',
-          border: '1px solid #A15E48',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          zIndex: 10,
-          marginBottom: '20px'
-        }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+    <div>
+      <div className="p-3.5 bg-slate-50/60 border-b border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
+        <span>
+          Total Users: <strong className="text-slate-800">{users?.length || 0}</strong> registered accounts
+        </span>
+        <Button
+          size="small"
+          icon={<ReloadOutlined />}
+          onClick={() => dispatch(userAll())}
+          loading={loading}
+          className="rounded-lg text-xs"
         >
-          <line x1="19" y1="12" x2="5" y2="12"></line>
-          <polyline points="12 19 5 12 12 5"></polyline>
-        </svg>
-        Back To Dashboard
-      </button>
-
-      <Table
-        columns={columns}
-        dataSource={dataSource}
-        loading={loading}
-        pagination={false}
-        scroll={{ y: "100%" }}
-        bordered
-        locale={{
-          emptyText: <span style={{ color: "red", fontWeight: "bold" }}>No Data Found!!</span>,
-        }}
-      />
+          Refresh Directory
+        </Button>
+      </div>
+      <div className="overflow-x-auto">
+        <Table
+          columns={columns}
+          dataSource={dataSource}
+          loading={loading}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total, range) => `Showing ${range[0]}-${range[1]} of ${total} users`,
+          }}
+          locale={{
+            emptyText: <div className="py-8 text-slate-400 text-xs">No users found</div>,
+          }}
+        />
+      </div>
     </div>
   );
 };

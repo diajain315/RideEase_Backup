@@ -1,22 +1,11 @@
 import React, { useEffect, useState } from "react";
-import {
-  Form,
-  Input,
-  InputNumber,
-  Select,
-  Upload,
-  Button,
-  message,
-  Card,
-  Spin,
-} from "antd";
-import { UploadOutlined } from "@ant-design/icons";
+import { Form, Input, Upload, Button, message } from "antd";
+import { UploadOutlined, ArrowLeftOutlined, AppstoreOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
-import { addCategory, CategoryAll } from "../../../redux/features/Category/categoryAction";
-import { clearFields } from "../../../redux/features/Bikes/bikeSlice";
+import { addCategory } from "../../../redux/features/Category/categoryAction";
+import { clearFields } from "../../../redux/features/Category/categorySlice";
 import { useNavigate } from "react-router-dom";
-
-const { Option } = Select;
+import Layout from "../../../components/Layout";
 
 const AddCategory = () => {
   const [form] = Form.useForm();
@@ -24,15 +13,13 @@ const AddCategory = () => {
   const navigate = useNavigate();
   const [imageFile, setImageFile] = useState(null);
 
- 
   const { loading, success } = useSelector((state) => state.category);
 
- 
   useEffect(() => {
     if (success) {
       message.success("Category added successfully!");
       dispatch(clearFields());
-      navigate("/category");
+      navigate("/admin/category");
     }
   }, [success, dispatch, navigate]);
 
@@ -40,9 +27,9 @@ const AddCategory = () => {
     const isImage = file.type.startsWith("image/");
     if (!isImage) {
       message.error("Only image files are allowed!");
-    } else {
-      setImageFile(file);
+      return Upload.LIST_IGNORE;
     }
+    setImageFile(file);
     return false;
   };
 
@@ -55,87 +42,74 @@ const AddCategory = () => {
     const formData = new FormData();
     formData.append("name", values.name);
     formData.append("photo", imageFile);
-   
-    
+
     dispatch(addCategory(formData));
   };
 
   return (
-    <div >
-    
-    <Card
-      title="Add New Category"
-      className="max-w-4xl mx-auto my-10 shadow-xl rounded-2xl p-4"
-    >
-        <button
-        onClick={() => navigate('/category')}
-        style={{
-          position: 'absolute',
-          top: '15px',
-          left: '700px',
-          backgroundColor: '#A15E48',
-          color: 'white',
-          padding: '8px 16px',
-          borderRadius: '4px',
-          border: '1px solid #A15E48',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          zIndex: 10,
-          marginBottom: '20px'
-        }}
-      >
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="16" 
-          height="16" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2" 
-          strokeLinecap="round" 
-          strokeLinejoin="round"
-        >
-          <line x1="19" y1="12" x2="5" y2="12"></line>
-          <polyline points="12 19 5 12 12 5"></polyline>
-        </svg>
-        Back To Categories
-      </button>
+    <Layout title="Dashboard : Add Category">
+      <div className="p-6 bg-slate-50 min-h-[calc(100vh-64px)] flex justify-center">
+        <div className="w-full max-w-xl">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => navigate('/admin/category')}
+                className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 transition-colors shadow-sm"
+                title="Back to Categories"
+              >
+                <ArrowLeftOutlined />
+              </button>
+              <div>
+                <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  <AppstoreOutlined className="text-emerald-600" />
+                  Create Category
+                </h1>
+                <p className="text-xs text-slate-500">Add a new classification for your fleet vehicles</p>
+              </div>
+            </div>
+          </div>
 
-      <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
-        <Form.Item
-          label="Category Name"
-          name="name"
-          rules={[{ required: true, message: "Please input category name!" }]}
-        >
-          <Input placeholder="e.g., Sccoter" />
-        </Form.Item>
+          {/* Form Card */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-8">
+            <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
+              <Form.Item
+                label={<span className="text-xs font-semibold uppercase tracking-wider text-slate-600">Category Name</span>}
+                name="name"
+                rules={[{ required: true, message: "Please input category name!" }]}
+              >
+                <Input placeholder="e.g. Electric Scooters, Cruisers, Sport Bikes" className="rounded-xl border-slate-200 py-2.5" />
+              </Form.Item>
 
-       
-        <Form.Item
-          label="Upload Category Photo"
-          name="photo"
-          rules={[{ required: true, message: "Please upload a category image!" }]}
-        >
-          <Upload beforeUpload={beforeUpload} listType="picture" maxCount={1}>
-            <Button icon={<UploadOutlined />}>Click to Upload</Button>
-          </Upload>
-        </Form.Item>
+              <Form.Item
+                label={<span className="text-xs font-semibold uppercase tracking-wider text-slate-600">Category Cover Photo</span>}
+                name="photo"
+                rules={[{ required: true, message: "Please upload an image!" }]}
+              >
+                <Upload beforeUpload={beforeUpload} listType="picture" maxCount={1}>
+                  <Button icon={<UploadOutlined />} className="rounded-xl">Select Photo</Button>
+                </Upload>
+              </Form.Item>
 
-        <Form.Item>
-          <Button
-            type="primary"
-            htmlType="submit"
-            block
-            style={{ backgroundColor: "#A15E48", borderColor: "#A15E48" }}
-          >
-            {loading ? <Spin size="small" /> : "Add Category"}
-          </Button>
-        </Form.Item>
-      </Form>
-    </Card>
-    </div>
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                <Button onClick={() => navigate('/admin/category')} className="rounded-xl">
+                  Cancel
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  className="rounded-xl bg-emerald-600 hover:bg-emerald-700 font-semibold shadow-md shadow-emerald-600/20 border-none px-6"
+                >
+                  Create Category
+                </Button>
+              </div>
+            </Form>
+          </div>
+        </div>
+      </div>
+    </Layout>
   );
 };
 

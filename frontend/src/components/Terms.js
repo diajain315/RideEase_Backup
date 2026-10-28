@@ -1,701 +1,3 @@
-// /* global Razorpay */
-// import React, { useState } from "react";
-// import {useLocation, useNavigate } from "react-router-dom";
-// import {
-//   Button,
-//   Checkbox,
-//   Upload,
-//   message,
-//   Card,
-//   Typography,
-//   Divider,
-//   Row,
-//   Col,
-// } from "antd";
-// import { UploadOutlined, CheckCircleOutlined } from "@ant-design/icons";
-// import axios from 'axios';
-// const { Title, Paragraph } = Typography;
-
-// const Terms = () => {
-//  const navigate = useNavigate();
-//   const location = useLocation();
-//   const [agreed, setAgreed] = useState(false);
-//   const [fileList, setFileList] = useState([]);
-//   const price = location.state?.totalAmount || 100;
-//   const orderId = localStorage.getItem("orderId");
-
-//   // Handle file upload
-//   const handleFileChange = ({ fileList }) => setFileList(fileList);
-
-//   // Handle form submission
-//   const checkoutHandler = async (amount, orderId) => {
-//     try {
-//       const { data: keyData } = await axios.get("/api/v1/getKey");
-//       const { key } = keyData;
-
-//       const { data: orderData } = await axios.post("/api/v1/payment/process", {
-//         amount: amount,
-//       });
-
-//       const { order } = orderData;
-
-//       const options = {
-//         key,
-//         amount: order.amount,
-//         currency: "INR",
-//         name: "Bike4Rent",
-//         description: "Rental Payment",
-//         order_id: order.id,
-//         handler: async function (response) {
-//           // ✅ Razorpay payment successful
-//           await axios.put(`/api/v1/order/update-status/${orderId}`, {
-//             status: "Delivered",
-//             paymentId: response.razorpay_payment_id,
-//           });
-
-//           window.location.href = `/payment-success?paymentId=${response.razorpay_payment_id}`;
-//         },
-//         modal: {
-//           ondismiss: async function () {
-//             // ❌ Payment closed or failed
-//             await axios.put(`/api/v1/order/update-status/${orderId}`, {
-//               status: "Not Delivered",
-//               paymentId: "",
-//             });
-
-//             message.warning("Payment was cancelled.");
-//           },
-//         },
-//         prefill: {
-//           name: "Mannan Agrawal",
-//           email: "mannanagrawal17@gmail.com",
-//           contact: "9979934238",
-//         },
-//         theme: {
-//           color: "#F37254",
-//         },
-//       };
-
-//       const razor = new Razorpay(options);
-//       razor.open();
-//     } catch (err) {
-//       console.error("❌ Error during payment setup:", err.response || err);
-//       message.error("Something went wrong. Please try again.");
-//     }
-
-//     if (fileList.length === 0) {
-//       message.error("Please upload a valid driving license.");
-//       return;
-//     }
-
-//     message.success("Terms accepted! Proceeding to payment...");
-//     navigate("/payment", {
-//       state: { ...location.state, termsAccepted: true },
-//     });
-//   };
-
-
-
-//   return (
-//     <div
-//       style={{
-//         display: "flex",
-//         justifyContent: "center",
-//         alignItems: "center",
-//         minHeight: "100vh",
-//         backgroundColor: "#f5f5f5",
-//         padding: "20px",
-//       }}
-//     >
-//       <Card
-//         title={
-//           <Title level={2} style={{ textAlign: "center", marginBottom: 0 }}>
-//             Terms and Conditions
-//           </Title>
-//         }
-//         bordered={false}
-//         style={{
-//           maxWidth: 1000, 
-//           width: "100%",
-//           backgroundColor: "#fff",
-//           boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-//           borderRadius: 10,
-//           padding: 24,
-//         }}
-//       >
-//         <Typography>
-//           <Paragraph
-//             style={{ textAlign: "center", fontSize: "16px", fontWeight: "500" }}
-//           >
-//             Welcome to <strong>Bike4Rent Udaipur</strong>. Please read our terms before proceeding.
-//           </Paragraph>
-
-//           <Divider />
-
-//           <Row gutter={[16, 16]}>
-//             <Col span={24}>
-//               <Title level={4}>1. Rental Agreement</Title>
-//               <Paragraph>
-//                 - Minimum age: <strong>18 years</strong> with a valid driving license. <br />
-//                 - Bike must be returned in the same condition as received. <br />
-//                 - Rental period must be followed; extension requires approval.
-//               </Paragraph>
-//             </Col>
-
-//             <Col span={24}>
-//               <Title level={4}>2. Liability</Title>
-//               <Paragraph>
-//                 - Renter is responsible for <strong>damages, fines, and accidents</strong>. <br />
-//                 - Company is <strong>not liable</strong> for personal injuries during the rental period.
-//               </Paragraph>
-//             </Col>
-
-//             <Col span={24}>
-//               <Title level={4}>3. Payment & Refund Policy</Title>
-//               <Paragraph>
-//                 - Full payment is required before taking the bike. <br />
-//                 <strong>Cancellation Policy:</strong> <br />
-//                 - <strong>No refund</strong> will be provided once the order is placed.
-//               </Paragraph>
-//             </Col>
-
-//             <Col span={24}>
-//               <Title level={4}>4. Driving License Requirement</Title>
-//               <Paragraph>
-//                 - You must upload a valid government-issued <strong>driving license</strong> before proceeding.
-//               </Paragraph>
-
-//               <Upload
-//                 fileList={fileList}
-//                 onChange={handleFileChange}
-//                 beforeUpload={() => false} 
-//                 maxCount={1}
-//                 accept=".jpg,.png,.pdf"
-//               >
-//                 <Button
-//                   icon={<UploadOutlined />}
-//                   block
-//                   style={{
-//                     backgroundColor: "#1890ff",
-//                     color: "white",
-//                     fontWeight: "bold",
-//                   }}
-//                 >
-//                   Upload Driving License
-//                 </Button>
-//               </Upload>
-//             </Col>
-
-//             <Col span={24}>
-//               <Checkbox
-//                 onChange={(e) => setAgreed(e.target.checked)}
-//                 style={{ fontSize: "14px", marginTop: "10px" }}
-//               >
-//                 I agree to the terms and conditions
-//               </Checkbox>
-//             </Col>
-
-//             <Col span={24}>
-//               <Button
-//                 type="primary"
-//                 block
-//                 icon={<CheckCircleOutlined />}
-//                 size="large"
-//                 className="mt-4"
-//                 onClick={()=>checkoutHandler(price)}
-//                 disabled={!agreed || fileList.length === 0}
-//                 style={{
-//                   backgroundColor: agreed && fileList.length > 0 ? "#52c41a" : "#d9d9d9",
-//                   color: "white",
-//                   fontWeight: "bold",
-//                   marginTop: "15px",
-//                 }}
-//               >
-//                 Proceed to Payment({price})
-//               </Button>
-//             </Col>
-//           </Row>
-//         </Typography>
-//       </Card>
-//     </div>
-//   );
-// };
-// export default Terms;
-/* global Razorpay */
-
-// import React, { useState } from "react";
-// import {useLocation, useNavigate } from "react-router-dom";
-// import {
-//   Button,
-//   Checkbox,
-//   Upload,
-//   message,
-//   Card,
-//   Typography,
-//   Divider,
-//   Row,
-//   Col,
-// } from "antd";
-// import { UploadOutlined, CheckCircleOutlined } from "@ant-design/icons";
-// import axios from 'axios';
-// const { Title, Paragraph } = Typography;
-
-// const Terms = () => {
-//  const navigate = useNavigate();
-//   const location = useLocation();
-//   const [agreed, setAgreed] = useState(false);
-//   const [fileList, setFileList] = useState([]);
-//   const price = location.state?.totalAmount || 100;
-
-
-
-//   // Handle file upload
-//   const handleFileChange = ({ fileList }) => setFileList(fileList);
-
-//   // Handle form submission
-//   const checkoutHandler = async (amount) => {
-//     try {
-//       const { data: keyData } = await axios.get("/api/v1/getKey");
-//       const { key } = keyData;
-
-//       const { data: orderData } = await axios.post("/api/v1/payment/process", {
-//         amount: amount
-//       });
-
-//       const { order } = orderData;
-
-//       const options = {
-//         key,
-//         amount: order.amount, // in paise
-//         currency: "INR",
-//         name: "Bike4Rent",
-//         description: "Rental Payment",
-//         order_id: order.id,
-//         handler: function (response) {
-//           // 🟢 Redirect after payment
-//           window.location.href = "/payment-success";
-//         },
-//         prefill: {
-//           name: "Mannan Agrawal",
-//           email: "mannanagrawal17@gmail.com",
-//           contact: "9979934238"
-//         },
-//         theme: {
-//           color: "#F37254"
-//         }
-//       };
-
-//       const razor = new Razorpay(options);
-//       razor.open();
-//     } catch (err) {
-//       console.error("❌ Error during payment setup:", err.response || err);
-//       message.error("Something went wrong. Please try again.");
-//     }
-//   };
-
-
-
-//   return (
-//     <div
-//       style={{
-//         display: "flex",
-//         justifyContent: "center",
-//         alignItems: "center",
-//         minHeight: "100vh",
-//         backgroundColor: "#f5f5f5",
-//         padding: "20px",
-//       }}
-//     >
-//       <Card
-//         title={
-//           <Title level={2} style={{ textAlign: "center", marginBottom: 0 }}>
-//             Terms and Conditions
-//           </Title>
-//         }
-//         bordered={false}
-//         style={{
-//           maxWidth: 1000, 
-//           width: "100%",
-//           backgroundColor: "#fff",
-//           boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-//           borderRadius: 10,
-//           padding: 24,
-//         }}
-//       >
-//         <Typography>
-//           <Paragraph
-//             style={{ textAlign: "center", fontSize: "16px", fontWeight: "500" }}
-//           >
-//             Welcome to <strong>Bike4Rent Udaipur</strong>. Please read our terms before proceeding.
-//           </Paragraph>
-
-//           <Divider />
-
-//           <Row gutter={[16, 16]}>
-//             <Col span={24}>
-//               <Title level={4}>1. Rental Agreement</Title>
-//               <Paragraph>
-//                 - Minimum age: <strong>18 years</strong> with a valid driving license. <br />
-//                 - Bike must be returned in the same condition as received. <br />
-//                 - Rental period must be followed; extension requires approval.
-//               </Paragraph>
-//             </Col>
-
-//             <Col span={24}>
-//               <Title level={4}>2. Liability</Title>
-//               <Paragraph>
-//                 - Renter is responsible for <strong>damages, fines, and accidents</strong>. <br />
-//                 - Company is <strong>not liable</strong> for personal injuries during the rental period.
-//               </Paragraph>
-//             </Col>
-
-//             <Col span={24}>
-//               <Title level={4}>3. Payment & Refund Policy</Title>
-//               <Paragraph>
-//                 - Full payment is required before taking the bike. <br />
-//                 <strong>Cancellation Policy:</strong> <br />
-//                 - <strong>No refund</strong> will be provided once the order is placed.
-//               </Paragraph>
-//             </Col>
-
-//             <Col span={24}>
-//               <Title level={4}>4. Driving License Requirement</Title>
-//               <Paragraph>
-//                 - You must upload a valid government-issued <strong>driving license</strong> before proceeding.
-//               </Paragraph>
-
-//               <Upload
-//                 fileList={fileList}
-//                 onChange={handleFileChange}
-//                 beforeUpload={() => false} 
-//                 maxCount={1}
-//                 accept=".jpg,.png,.pdf"
-//               >
-//                 <Button
-//                   icon={<UploadOutlined />}
-//                   block
-//                   style={{
-//                     backgroundColor: "#1890ff",
-//                     color: "white",
-//                     fontWeight: "bold",
-//                   }}
-//                 >
-//                   Upload Driving License
-//                 </Button>
-//               </Upload>
-//             </Col>
-
-//             <Col span={24}>
-//               <Checkbox
-//                 onChange={(e) => setAgreed(e.target.checked)}
-//                 style={{ fontSize: "14px", marginTop: "10px" }}
-//               >
-//                 I agree to the terms and conditions
-//               </Checkbox>
-//             </Col>
-
-//             <Col span={24}>
-//               <Button
-//                 type="primary"
-//                 block
-//                 icon={<CheckCircleOutlined />}
-//                 size="large"
-//                 className="mt-4"
-//                 onClick={()=>checkoutHandler(price)}
-//                 disabled={!agreed || fileList.length === 0}
-//                 style={{
-//                   backgroundColor: agreed && fileList.length > 0 ? "#52c41a" : "#d9d9d9",
-//                   color: "white",
-//                   fontWeight: "bold",
-//                   marginTop: "15px",
-//                 }}
-//               >
-//                 Proceed to Payment({price})
-//               </Button>
-//             </Col>
-//           </Row>
-//         </Typography>
-//       </Card>
-//     </div>
-//   );
-// };
-// export default Terms;
-// import React, { useState } from "react";
-// import { useLocation, useNavigate } from "react-router-dom";
-// import {
-//   Button,
-//   Checkbox,
-//   Upload,
-//   message,
-//   Card,
-//   Typography,
-//   Divider,
-//   Row,
-//   Col,
-//   Input,
-// } from "antd";
-// import { UploadOutlined, CheckCircleOutlined } from "@ant-design/icons";
-
-// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-// import {
-//   faFileAlt,
-//   faShieldAlt,
-//   faCreditCard,
-//   faIdCard,
-//   faCheckCircle,
-// } from "@fortawesome/free-solid-svg-icons";
-// import axios from 'axios';
-// import { useDispatch, useSelector } from "react-redux";
-// import { addLicense } from "../redux/features/User/authAction";
-// const { Title, Paragraph } = Typography;
-
-// const Terms = () => {
-//   const { userInfo } = useSelector((state) => state.auth);
-//   const dispatch = useDispatch(); 
-//   console.log('453:',userInfo);
-//   const location = useLocation();
-//   const [agreed, setAgreed] = useState(false);
-//   const [fileList, setFileList] = useState(null);
-//   const [licenseNumber, setLicenseNumber] = useState("");
-//   const [licenseError, setLicenseError] = useState(false);
-//   const price = location.state?.totalAmount || 100;
-
-//   // Handle file upload
-//   const handleFileChange = ({ fileList }) => setFileList(fileList);
-//   const validateLicense = (license) => {
-//     // Example pattern: Indian license format like GJ01 12345678901
-//     const pattern = /^[A-Z]{2}[0-9]{2}\s?[0-9]{11}$/;
-//     return pattern.test(license);
-//   };
-  
-//   const beforeUpload = (file) => {
-//     const isImage = file.type.startsWith("image/");
-//     if (!isImage) {
-//       message.error("Only image files are allowed!");
-//     } else {
-//       setFileList(file);
-//     }
-//     return false;
-//   };
-//   // Handle form submission
-//   const checkoutHandler = async (amount) => {
-//     try {
-//       const { data: keyData } = await axios.get("/api/v1/getKey");
-//       const { key } = keyData;
-
-//       const { data: orderData } = await axios.post("/api/v1/payment/process", {
-//         amount: amount
-//       });
-//       const licenseData = new FormData();
-//       licenseData.append("userId", userInfo._id);
-//       licenseData.append("licenseNumber", licenseNumber);
-//       licenseData.append("licenseFile", fileList);
-//     dispatch(addLicense(licenseData));
-
-    
-
-//       const { order } = orderData;
-
-//       const options = {
-//         key,
-//         amount: order.amount, // in paise
-//         currency: "INR",
-//         name: "Bike4Rent",
-//         description: "Rental Payment",
-//         order_id: order.id,
-//         handler: function (response) {
-//           window.location.href = "/payment-success";
-//         },
-//         prefill: {
-//           name: "Mannan Agrawal",
-//           email: "mannanagrawal17@gmail.com",
-//           contact: "9979934238"
-//         },
-//         theme: {
-//           color: "#8B4D3A"
-//         }
-//       };
-
-//       const razor = new Razorpay(options);
-//       razor.open();
-//     } catch (err) {
-//       console.error("❌ Error during payment setup:", err.response || err);
-//       message.error("Something went wrong. Please try again.");
-//     }
-//   };
-  
-
-//   return (
-//     <div className="bg-gradient-to-br from-[#fff7f0] via-[#fde9dc] to-[#f8d9c6] min-h-screen py-8 px-4">
-//       <div className="max-w-4xl mx-auto">
-//         <Card
-//           className="rounded-xl shadow-lg border-none overflow-hidden"
-//           title={
-//             <Title
-//               level={2}
-//               className="text-center mb-0 font-extrabold tracking-tight text-orange-900"
-//             >
-//               Terms and Conditions
-//             </Title>
-//           }
-//           headStyle={{
-//             backgroundColor: "#fff7f0",
-//             borderBottom: "1px solid #e8d5cc",
-//             padding: "24px"
-//           }}
-//           bodyStyle={{
-//             backgroundColor: "white",
-//             padding: "32px"
-//           }}
-//         >
-//           <Typography>
-//             <Paragraph className="text-center text-lg text-[#5a4239]/90 mb-8">
-//               Welcome to <strong className="text-[#8B4D3A]">BikeForRent Udaipur</strong>.
-//               Please read our terms before proceeding.
-//             </Paragraph>
-
-//             <Divider className="border-[#e8d5cc]" />
-
-//             <Row gutter={[16, 24]}>
-//               <Col span={24}>
-//                 <div className="flex items-start gap-4">
-//                   <FontAwesomeIcon
-//                     icon={faFileAlt}
-//                     className="text-[#A15E48] text-xl mt-1"
-//                   />
-//                   <div>
-//                     <Title level={4} className="text-[#5a4239] mb-2">
-//                       Rental Agreement
-//                     </Title>
-//                     <Paragraph className="text-[#5a4239]/90">
-//                       - Minimum age: <strong>18 years</strong> with a valid driving license. <br />
-//                       - Bike must be returned in the same condition as received. <br />
-//                       - Rental period must be followed; extension requires approval.
-//                     </Paragraph>
-//                   </div>
-//                 </div>
-//               </Col>
-
-//               <Col span={24}>
-//                 <div className="flex items-start gap-4">
-//                   <FontAwesomeIcon
-//                     icon={faShieldAlt}
-//                     className="text-[#A15E48] text-xl mt-1"
-//                   />
-//                   <div>
-//                     <Title level={4} className="text-[#5a4239] mb-2">
-//                       Liability
-//                     </Title>
-//                     <Paragraph className="text-[#5a4239]/90">
-//                       - Renter is responsible for <strong>damages, fines, and accidents</strong>. <br />
-//                       - Company is <strong>not liable</strong> for personal injuries during the rental period.
-//                     </Paragraph>
-//                   </div>
-//                 </div>
-//               </Col>
-
-//               <Col span={24}>
-//                 <div className="flex items-start gap-4">
-//                   <FontAwesomeIcon
-//                     icon={faCreditCard}
-//                     className="text-[#A15E48] text-xl mt-1"
-//                   />
-//                   <div>
-//                     <Title level={4} className="text-[#5a4239] mb-2">
-//                       Payment & Refund Policy
-//                     </Title>
-//                     <Paragraph className="text-[#5a4239]/90">
-//                       - Full payment is required before taking the bike. <br />
-//                       <strong>Cancellation Policy:</strong> <br />
-//                       - <strong>No refund</strong> will be provided once the order is placed.
-//                     </Paragraph>
-//                   </div>
-//                 </div>
-//               </Col>
-
-//               <Col span={24}>
-//                 <div className="flex items-start gap-4">
-//                   <FontAwesomeIcon
-//                     icon={faIdCard}
-//                     className="text-[#A15E48] text-xl mt-1"
-//                   />
-//                   <div>
-//                     <Title level={4} className="text-[#5a4239] mb-2">
-//                       Driving License Requirement
-//                     </Title>
-//                     <Paragraph className="text-[#5a4239]/90 mb-4">
-//                       - You must upload a valid government-issued <strong>driving license</strong> before proceeding.
-//                     </Paragraph>
-
-//                      <Upload beforeUpload={beforeUpload} listType="picture" maxCount={1}>
-//                       <Button
-//                         icon={<UploadOutlined />}
-//                         className="bg-gradient-to-r from-[#8B4D3A] to-[#A15E48] text-white font-semibold hover:from-[#733F30] hover:to-[#8B4D3A]"
-//                         style={{ maxWidth: "300px" }}
-//                       >
-//                         Upload Driving License
-//                       </Button>
-//                     </Upload>
-//                     <div className="mt-4">
-//                       <Input
-//                         placeholder="Enter Driving License Number (e.g., GJ01 12345678901)"
-//                         value={licenseNumber}
-//                         onChange={(e) => {
-//                           const val = e.target.value;
-//                           setLicenseNumber(val);
-//                           setLicenseError(!validateLicense(val));
-//                         }}
-//                         status={licenseError && licenseNumber ? "error" : ""}
-//                         maxLength={20}
-//                         className="max-w-md"
-//                       />
-//                       {licenseError && licenseNumber && (
-//                         <p className="text-red-500 text-sm mt-1">
-//                           Invalid license number format.
-//                         </p>
-//                       )}
-//                     </div>
-
-//                   </div>
-//                 </div>
-//               </Col>
-
-//               <Col span={24}>
-//                 <Checkbox
-//                   onChange={(e) => setAgreed(e.target.checked)}
-//                   className="text-[#5a4239] mt-6"
-//                 >
-//                   I agree to the terms and conditions
-//                 </Checkbox>
-//               </Col>
-
-//               <Col span={24}>
-//                 <Button
-//                   type="primary"
-//                   block
-//                   icon={<FontAwesomeIcon icon={faCheckCircle} />}
-//                   size="large"
-//                   onClick={() => checkoutHandler(price)}
-//                   // disabled={!agreed || fileList.length === 0 || !licenseNumber || licenseError}
-//                   disabled={!agreed || !fileList || fileList.length === 0 || !licenseNumber || licenseError}
-
-
-//                   className={`mt-6 h-12 text-lg font-semibold ${agreed && fileList.length > 0 ?
-//                     'bg-gradient-to-r from-[#8B4D3A] to-[#A15E48] hover:from-[#733F30] hover:to-[#8B4D3A]' :
-//                     'bg-gray-300 cursor-not-allowed'}`}
-//                 >
-//                   Proceed to Payment (₹{price})
-//                 </Button>
-//               </Col>
-//             </Row>
-//           </Typography>
-//         </Card>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Terms;
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -706,266 +8,410 @@ import {
   Card,
   Typography,
   Divider,
-  Row,
-  Col,
   Input,
 } from "antd";
-import { UploadOutlined, CheckCircleOutlined } from "@ant-design/icons";
-
+import { UploadOutlined, CheckCircleFilled, CloseCircleFilled, LoadingOutlined } from "@ant-design/icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faFileAlt,
-  faShieldAlt,
+  faFileContract,
+  faShieldHalved,
   faCreditCard,
   faIdCard,
   faCheckCircle,
+  faGasPump,
+  faHelmetSafety,
+  faClock,
 } from "@fortawesome/free-solid-svg-icons";
-import axios from 'axios';
 import { useDispatch, useSelector } from "react-redux";
 import { addLicense } from "../redux/features/User/authAction";
-const { Title, Paragraph } = Typography;
+import Http from "../Helper/Http";
 
-const Terms = () => {
+const { Title, Text, Paragraph } = Typography;
+
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
+export default function Terms() {
   const { userInfo } = useSelector((state) => state.auth);
-  const dispatch = useDispatch(); 
-  console.log('453:',userInfo);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const location = useLocation();
+
   const [agreed, setAgreed] = useState(false);
   const [fileList, setFileList] = useState(null);
   const [licenseNumber, setLicenseNumber] = useState("");
   const [licenseError, setLicenseError] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // 🔍 Driving License Verification State
+  const [docVerifying, setDocVerifying] = useState(false);
+  const [docVerification, setDocVerification] = useState(null);
+
   const price = location.state?.totalAmount || 100;
 
-  // Handle file upload
-  const handleFileChange = ({ fileList }) => setFileList(fileList);
   const validateLicense = (license) => {
-    // Example pattern: Indian license format like GJ01 12345678901
-    const pattern = /^[A-Z]{2}[0-9]{2}\s?[0-9]{11}$/;
-    return pattern.test(license);
+    const clean = (license || "").trim().replace(/\s+/g, "");
+    return clean.length >= 8 && clean.length <= 18;
   };
-  
-  const beforeUpload = (file) => {
-    const isImage = file.type.startsWith("image/");
-    if (!isImage) {
-      message.error("Only image files are allowed!");
-    } else {
-      setFileList(file);
+
+  const beforeUpload = async (file) => {
+    const isAllowed =
+      file.type.startsWith("image/") || file.type === "application/pdf";
+    if (!isAllowed) {
+      message.error("Only image files or PDFs are allowed!");
+      return Upload.LIST_IGNORE;
     }
+    setFileList(file);
+    setDocVerification(null);
+
+    // If image, trigger instant verification pre-check
+    if (file.type.startsWith("image/")) {
+      setDocVerifying(true);
+      try {
+        const testFormData = new FormData();
+        testFormData.append("licenseFile", file);
+        if (licenseNumber) {
+          testFormData.append("licenseNumber", licenseNumber);
+        }
+        const res = await Http.post("/api/v1/auth/verify-license-doc", testFormData);
+        if (res.data?.isValid) {
+          setDocVerification({
+            isValid: true,
+            message: res.data.reason || "Official Driving License document verified successfully!",
+          });
+          message.success("Driving License verified successfully!");
+        } else {
+          setDocVerification({
+            isValid: false,
+            message:
+              res.data?.reason ||
+              "Uploaded image does not appear to be an official Driving License. Please upload a clear photo of your Driving License card.",
+          });
+          message.error("Document check failed: Not a recognized Driving License!");
+        }
+      } catch (err) {
+        const errMsg =
+          err.response?.data?.message ||
+          "Could not verify document. Please ensure the image is clear and legible.";
+        setDocVerification({
+          isValid: false,
+          message: errMsg,
+        });
+        message.error(errMsg);
+      } finally {
+        setDocVerifying(false);
+      }
+    } else {
+      setDocVerification({
+        isValid: true,
+        message: "PDF document selected.",
+      });
+    }
+
     return false;
   };
-  // Handle form submission
+
   const checkoutHandler = async (amount) => {
+    if (docVerification && !docVerification.isValid) {
+      message.error("Please upload a valid Driving License document before paying.");
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      const { data: keyData } = await axios.get("/api/v1/getKey");
-      const { key } = keyData;
+      const currentUser =
+        userInfo ||
+        (localStorage.getItem("userInfo")
+          ? JSON.parse(localStorage.getItem("userInfo"))
+          : null);
 
-      const { data: orderData } = await axios.post("/api/v1/payment/process", {
-        amount: amount
+      if (!currentUser) {
+        message.error("Please login to proceed with booking.");
+        navigate("/login");
+        return;
+      }
+
+      if (fileList && licenseNumber) {
+        const licenseData = new FormData();
+        licenseData.append("userId", currentUser._id);
+        licenseData.append("licenseNumber", licenseNumber);
+        licenseData.append("licenseFile", fileList);
+        const licenseRes = await dispatch(addLicense(licenseData));
+        if (licenseRes.error) {
+          message.error(licenseRes.payload || "Driving license verification failed.");
+          setSubmitting(false);
+          return; // 🛑 DO NOT PROCEED TO PAYMENT IF LICENSE REJECTED
+        }
+      }
+
+      const { data: keyData } = await Http.get("/api/v1/getKey");
+      const key = keyData?.key;
+
+      if (!key) {
+        message.error("Failed to retrieve Razorpay key. Please try again.");
+        return;
+      }
+
+      const validAmount = Number(amount) || 100;
+      const { data: orderData } = await Http.post("/api/v1/payment/process", {
+        amount: validAmount,
       });
-      const licenseData = new FormData();
-      licenseData.append("userId", userInfo._id);
-      licenseData.append("licenseNumber", licenseNumber);
-      licenseData.append("licenseFile", fileList);
-    dispatch(addLicense(licenseData));
 
-    
+      if (!orderData || !orderData.order) {
+        message.error("Failed to create payment order. Please try again.");
+        return;
+      }
 
       const { order } = orderData;
 
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded || !window.Razorpay) {
+        message.error(
+          "Razorpay SDK failed to load. Please check your internet connection."
+        );
+        return;
+      }
+
       const options = {
         key,
-        amount: order.amount, // in paise
+        amount: order.amount,
         currency: "INR",
-        name: "Bike4Rent",
-        description: "Rental Payment",
+        name: "RideEase Rentals",
+        description: "Vehicle Rental Payment",
         order_id: order.id,
-        handler: function (response) {
+        handler: async function (response) {
+          try {
+            if (location.state?.orderId && response.razorpay_payment_id) {
+              await Http.post("/api/v1/order/razorpay-success", {
+                orderId: location.state.orderId,
+                paymentId: response.razorpay_payment_id,
+              });
+            }
+          } catch (e) {
+            console.error("Order status update failed:", e);
+          }
           window.location.href = "/payment-success";
         },
         prefill: {
-          name: "Mannan Agrawal",
-          email: "mannanagrawal17@gmail.com",
-          contact: "9979934238"
+          name: currentUser.name || "Customer",
+          email: currentUser.email || "customer@example.com",
+          contact: currentUser.phone || "",
         },
         theme: {
-          color: "#8B4D3A"
-        }
+          color: "#10B981", // Electric Emerald
+        },
       };
 
-      const razor = new Razorpay(options);
+      const razor = new window.Razorpay(options);
+      razor.on("payment.failed", function (response) {
+        message.error(response.error?.description || "Payment failed");
+      });
       razor.open();
     } catch (err) {
-      console.error("❌ Error during payment setup:", err.response || err);
-      message.error("Something went wrong. Please try again.");
+      console.error("Payment setup error:", err.response || err);
+      message.error(
+        err.response?.data?.message || "Something went wrong. Please try again."
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
-  
 
   return (
-    <div className="bg-gradient-to-br from-[#fff7f0] via-[#fde9dc] to-[#f8d9c6] min-h-screen py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <Card
-          className="rounded-xl shadow-lg border-none overflow-hidden"
-          title={
-            <Title
-              level={2}
-              className="text-center mb-0 font-extrabold tracking-tight text-orange-900"
+    <div className="bg-slate-50 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto space-y-8">
+        {/* Step Indicator */}
+        <div className="grid grid-cols-3 gap-2 text-center text-xs font-semibold">
+          <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-700 border border-emerald-500/20">
+            1. Vehicle Selected
+          </div>
+          <div className="p-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold shadow-sm">
+            2. License & Terms
+          </div>
+          <div className="p-2.5 rounded-xl bg-slate-100 text-slate-400">
+            3. Confirmation
+          </div>
+        </div>
+
+        {/* Main Card */}
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden p-8 sm:p-10">
+          {/* Header */}
+          <div className="text-center max-w-xl mx-auto mb-8">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 mb-3 text-xl">
+              <FontAwesomeIcon icon={faFileContract} />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Terms & License Verification
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">
+              Please verify your driving license and accept rental conditions before proceeding to secure payment.
+            </p>
+          </div>
+
+          {/* Quick Rules Pills */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-100 text-slate-700 text-xs font-medium">
+              <FontAwesomeIcon icon={faHelmetSafety} className="text-emerald-600 text-base" />
+              <span>Complimentary helmets provided</span>
+            </div>
+            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-100 text-slate-700 text-xs font-medium">
+              <FontAwesomeIcon icon={faGasPump} className="text-emerald-600 text-base" />
+              <span>Full-to-full fuel policy</span>
+            </div>
+            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-100 text-slate-700 text-xs font-medium">
+              <FontAwesomeIcon icon={faShieldHalved} className="text-emerald-600 text-base" />
+              <span>Third-party insurance covered</span>
+            </div>
+          </div>
+
+          {/* Driving License Section */}
+          <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 mb-8 space-y-5">
+            <div className="flex items-center gap-2">
+              <FontAwesomeIcon icon={faIdCard} className="text-emerald-600" />
+              <h2 className="text-base font-bold text-slate-900">
+                Driver Identification
+              </h2>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                Driving License Number
+              </label>
+              <Input
+                placeholder="e.g. RJ27-20210012345"
+                size="large"
+                className="rounded-xl"
+                value={licenseNumber}
+                onChange={(e) => {
+                  setLicenseNumber(e.target.value);
+                  setLicenseError(!validateLicense(e.target.value));
+                }}
+              />
+              {licenseError && (
+                <p className="text-xs text-rose-500 font-semibold mt-1">
+                  Please enter a valid driving license number (8–18 characters).
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                Upload License Document (Photo or PDF)
+              </label>
+              <Upload
+                beforeUpload={beforeUpload}
+                maxCount={1}
+                accept="image/*,.pdf"
+                className="w-full"
+                showUploadList={false}
+              >
+                <button
+                  type="button"
+                  className="w-full py-3 px-4 border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl bg-white text-slate-600 font-medium text-sm flex items-center justify-center gap-2 transition cursor-pointer"
+                >
+                  <UploadOutlined className="text-emerald-600 text-base" />
+                  <span>{fileList ? fileList.name : "Click to select Driving License file"}</span>
+                </button>
+              </Upload>
+
+              {/* Real-time Document Verification Feedback */}
+              {docVerifying && (
+                <div className="mt-2.5 p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-800 flex items-center gap-2 font-medium">
+                  <LoadingOutlined className="text-blue-600 text-sm animate-spin" />
+                  <span>Scanning & verifying Driving License authenticity...</span>
+                </div>
+              )}
+
+              {docVerification && docVerification.isValid && (
+                <div className="mt-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-start gap-2 font-medium">
+                  <CheckCircleFilled className="text-emerald-600 text-sm mt-0.5 shrink-0" />
+                  <div>
+                    <span className="font-bold block">Document Verified:</span>
+                    <span>{docVerification.message}</span>
+                  </div>
+                </div>
+              )}
+
+              {docVerification && !docVerification.isValid && (
+                <div className="mt-2.5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start gap-2 font-medium">
+                  <CloseCircleFilled className="text-rose-600 text-sm mt-0.5 shrink-0" />
+                  <div>
+                    <span className="font-bold block">Document Check Failed:</span>
+                    <span>{docVerification.message}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Terms Checklist */}
+          <div className="space-y-3 mb-8 text-xs text-slate-600 bg-slate-50/80 p-5 rounded-2xl border border-slate-100">
+            <p className="font-bold text-slate-800 text-sm">Summary of Terms:</p>
+            <ul className="space-y-1.5 list-disc pl-4">
+              <li>Renter must be at least 18 years old and hold a valid motor vehicle license.</li>
+              <li>Vehicles must not be driven outside authorized jurisdiction without written consent.</li>
+              <li>Traffic violations and fines incurred during the rental period are the renter's liability.</li>
+              <li>Refundable security deposit is processed upon safe return inspection.</li>
+            </ul>
+          </div>
+
+          {/* Agreement Checkbox */}
+          <div className="mb-8 p-4 rounded-xl bg-emerald-50/60 border border-emerald-200/80">
+            <Checkbox
+              onChange={(e) => setAgreed(e.target.checked)}
+              checked={agreed}
+              className="text-slate-800 font-semibold"
             >
-              Terms and Conditions
-            </Title>
-          }
-          headStyle={{
-            backgroundColor: "#fff7f0",
-            borderBottom: "1px solid #e8d5cc",
-            padding: "24px"
-          }}
-          bodyStyle={{
-            backgroundColor: "white",
-            padding: "32px"
-          }}
-        >
-          <Typography>
-            <Paragraph className="text-center text-lg text-[#5a4239]/90 mb-8">
-              Welcome to <strong className="text-[#8B4D3A]">BikeForRent Udaipur</strong>.
-              Please read our terms before proceeding.
-            </Paragraph>
+              I have read, understood, and accept RideEase Rental Terms & Conditions.
+            </Checkbox>
+          </div>
 
-            <Divider className="border-[#e8d5cc]" />
-
-            <Row gutter={[16, 24]}>
-              <Col span={24}>
-                <div className="flex items-start gap-4">
-                  <FontAwesomeIcon
-                    icon={faFileAlt}
-                    className="text-[#A15E48] text-xl mt-1"
-                  />
-                  <div>
-                    <Title level={4} className="text-[#5a4239] mb-2">
-                      Rental Agreement
-                    </Title>
-                    <Paragraph className="text-[#5a4239]/90">
-                      - Minimum age: <strong>18 years</strong> with a valid driving license. <br />
-                      - Bike must be returned in the same condition as received. <br />
-                      - Rental period must be followed; extension requires approval.
-                    </Paragraph>
-                  </div>
-                </div>
-              </Col>
-
-              <Col span={24}>
-                <div className="flex items-start gap-4">
-                  <FontAwesomeIcon
-                    icon={faShieldAlt}
-                    className="text-[#A15E48] text-xl mt-1"
-                  />
-                  <div>
-                    <Title level={4} className="text-[#5a4239] mb-2">
-                      Liability
-                    </Title>
-                    <Paragraph className="text-[#5a4239]/90">
-                      - Renter is responsible for <strong>damages, fines, and accidents</strong>. <br />
-                      - Company is <strong>not liable</strong> for personal injuries during the rental period.
-                    </Paragraph>
-                  </div>
-                </div>
-              </Col>
-
-              <Col span={24}>
-                <div className="flex items-start gap-4">
-                  <FontAwesomeIcon
-                    icon={faCreditCard}
-                    className="text-[#A15E48] text-xl mt-1"
-                  />
-                  <div>
-                    <Title level={4} className="text-[#5a4239] mb-2">
-                      Payment & Refund Policy
-                    </Title>
-                    <Paragraph className="text-[#5a4239]/90">
-                      - Full payment is required before taking the bike. <br />
-                      <strong>Cancellation Policy:</strong> <br />
-                      - <strong>No refund</strong> will be provided once the order is placed.
-                    </Paragraph>
-                  </div>
-                </div>
-              </Col>
-
-              <Col span={24}>
-                <div className="flex items-start gap-4">
-                  <FontAwesomeIcon
-                    icon={faIdCard}
-                    className="text-[#A15E48] text-xl mt-1"
-                  />
-                  <div>
-                    <Title level={4} className="text-[#5a4239] mb-2">
-                      Driving License Requirement
-                    </Title>
-                    <Paragraph className="text-[#5a4239]/90 mb-4">
-                      - You must upload a valid government-issued <strong>driving license</strong> before proceeding.
-                    </Paragraph>
-
-                     <Upload beforeUpload={beforeUpload} listType="picture" maxCount={1}>
-                      <Button
-                        icon={<UploadOutlined />}
-                        className="bg-gradient-to-r from-[#8B4D3A] to-[#A15E48] text-white font-semibold hover:from-[#733F30] hover:to-[#8B4D3A]"
-                        style={{ maxWidth: "300px" }}
-                      >
-                        Upload Driving License
-                      </Button>
-                    </Upload>
-                    <div className="mt-4">
-                      <Input
-                        placeholder="Enter Driving License Number (e.g., GJ01 12345678901)"
-                        value={licenseNumber}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setLicenseNumber(val);
-                          setLicenseError(!validateLicense(val));
-                        }}
-                        status={licenseError && licenseNumber ? "error" : ""}
-                        maxLength={20}
-                        className="max-w-md"
-                      />
-                      {licenseError && licenseNumber && (
-                        <p className="text-red-500 text-sm mt-1">
-                          Invalid license number format.
-                        </p>
-                      )}
-                    </div>
-
-                  </div>
-                </div>
-              </Col>
-
-              <Col span={24}>
-                <Checkbox
-                  onChange={(e) => setAgreed(e.target.checked)}
-                  className="text-[#5a4239] mt-6"
-                >
-                  I agree to the terms and conditions
-                </Checkbox>
-              </Col>
-
-              <Col span={24}>
-                <Button
-                  type="primary"
-                  block
-                  icon={<FontAwesomeIcon icon={faCheckCircle} />}
-                  size="large"
-                  onClick={() => checkoutHandler(price)}
-                  disabled={!agreed || !fileList || fileList.length === 0 || !licenseNumber || licenseError}
-                  className={`mt-6 h-12 text-lg font-semibold ${agreed && fileList && fileList.length > 0 ?
-                    'bg-gradient-to-r from-[#8B4D3A] to-[#A15E48] hover:from-[#733F30] hover:to-[#8B4D3A]' :
-                    'bg-gray-300 cursor-not-allowed'}`}
-                >
-                  Proceed to Payment (₹{price})
-                </Button>
-              </Col>
-            </Row>
-          </Typography>
-        </Card>
+          {/* Payment CTA */}
+          <button
+            type="button"
+            onClick={() => checkoutHandler(price)}
+            disabled={
+              !agreed ||
+              !fileList ||
+              !licenseNumber ||
+              licenseError ||
+              submitting ||
+              docVerifying ||
+              (docVerification && !docVerification.isValid)
+            }
+            className={`w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
+              agreed &&
+              fileList &&
+              licenseNumber &&
+              !licenseError &&
+              !submitting &&
+              !docVerifying &&
+              (!docVerification || docVerification.isValid)
+                ? "bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/25 active:scale-95 cursor-pointer"
+                : "bg-slate-200 text-slate-400 cursor-not-allowed"
+            }`}
+          >
+            <FontAwesomeIcon icon={faCreditCard} />
+            <span>
+              {submitting
+                ? "Connecting to Payment Gateway..."
+                : `Proceed to Pay ₹${price}`}
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );
-};
-
-export default Terms;
+}

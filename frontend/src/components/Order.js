@@ -1,214 +1,51 @@
-// import React, { useEffect, useState } from "react";
-// import moment from "moment";
-// import { Button, Modal, DatePicker } from "antd";
-// import { useNavigate, useParams } from "react-router-dom";
-// import { useSelector, useDispatch } from "react-redux";
-// import { getBikeBySlug } from "../redux/features/Bikes/bikeAction";
-// import { AddOrder } from "../redux/features/Order/orderAction";
-// import { clearFields } from "../redux/features/Order/orderSlice";
-// import Spinner from "../Helper/Spinner";
-// import Error from "../Helper/Error";
-// import { toast } from "react-hot-toast";
-
-// const base_url = "http://localhost:5001/";
-// const { RangePicker } = DatePicker;
-
-// const Order = () => {
-//   const [error, setError] = useState("");
-//   const [from, setFrom] = useState();
-//   const [to, setTo] = useState();
-//   const [days, setDays] = useState(0);
-//   const [totalAmount, setTotalAmount] = useState(0);
-//   const [open, setOpen] = useState(false);
-
-//   const { slug } = useParams();
-//   const navigate = useNavigate();
-//   const dispatch = useDispatch();
-
-//   const { loading, success } = useSelector((state) => state.order);
-//   const { bikeBySlug } = useSelector((state) => state.bike);
-//   const { userInfo } = useSelector((state) => state.auth);
-
-//   useEffect(() => {
-//     window.scrollTo({ top: 0, behavior: "smooth" });
-//   }, []);
-
-//   useEffect(() => {
-//     dispatch(getBikeBySlug(slug));
-//   }, [dispatch, slug]);
-
-//   useEffect(() => {
-//     if (success) {
-//       toast.success("Your order has been placed");
-//       dispatch(clearFields());
-//       navigate("/");
-//     }
-//   }, [success, navigate, dispatch]);
-
-//   useEffect(() => {
-//     if (error) {
-//       setError("");
-//       navigate("/login");
-//     }
-//   }, [error, navigate]);
-
-//   useEffect(() => {
-//     if (bikeBySlug) {
-//       setTotalAmount(days * bikeBySlug.price);
-//     }
-//   }, [days, bikeBySlug]);
-
-//   const disabledDate = (current) => current && current < moment().startOf("day");
-
-//   const selectTimeSlots = (values) => {
-//     setFrom(values[0].format("YYYY-MM-DD"));
-//     setTo(values[1].format("YYYY-MM-DD"));
-//     setDays(values[1].diff(values[0], "days"));
-//   };
-
-//   const showModal = () => setOpen(true);
-//   const hideModal = () => setOpen(false);
-
-//   const submitModal = async () => {
-//     setOpen(false);
-
-//     if (!userInfo) {
-//       navigate("/login", {
-//         state: { from: "/Terms", orderData: { from, to, totalAmount, bikeId: bikeBySlug._id } }
-//       });
-//       return;
-//     }
-
-//     navigate("/Terms", { state: { from, to, totalAmount, bikeId: bikeBySlug._id } });
-
-//     try {
-
-//       const formData = {
-//         totalAmt: totalAmount,
-//         startDate: from,
-//         endDate: to,
-//         bikeId: bikeBySlug._id,
-//       };
-
-//       const data = await dispatch(AddOrder(formData));
-
-//       if (data.error) {
-//         setError(data.payload);
-//         dispatch(clearFields());
-//       }
-//     } catch (err) {
-//       console.error("Order submission failed", err);
-//     }
-//   };
-
-//   return (
-//     <>
-//       {bikeBySlug ? (
-//         <section className="overflow-hidden text-gray-600 body-font">
-//           <div className="container px-5 py-10 mx-auto">
-//             <div className="flex flex-wrap mx-auto lg:w-4/5">
-//               <img
-//                 alt={bikeBySlug.name}
-//                 className="object-cover object-center w-full rounded h-60 sm:h-36 lg:w-1/2 lg:h-auto"
-//                 src={`${base_url}api/v1/bike/bike-photo/${bikeBySlug._id}`}
-//               />
-//               <div className="w-full mt-6 lg:w-1/2 lg:pl-10 lg:py-6 lg:mt-0">
-//                 <h2 className="text-sm tracking-widest text-gray-500 title-font">Rent Now !!!</h2>
-//                 <h1 className="mb-1 text-3xl font-medium text-gray-900 title-font">{bikeBySlug.name}</h1>
-//                 {/* <p className="text-justify">{bikeBySlug.description}</p> */}
-//                 <p className="text-justify mb-2">{bikeBySlug.description}</p>
-//                 <div className="mb-2"><b>Category:</b> {bikeBySlug.category?.name || "N/A"}</div>
-//                 <div className="mb-2"><b>Start Type:</b> {bikeBySlug.startType}</div>
-//                 <div className="mb-2"><b>Year of Manufacture:</b> {bikeBySlug.year}</div>
-//                 <div className="mb-2"><b>Kilometers Used:</b> {bikeBySlug.kilometers} km</div>
-//                 <div className="mb-2"><b>Petrol Capacity:</b> {bikeBySlug.petrolCapacity} L</div>
-//                 {/* <h1 className="mb-1 text-xl font-normal text-gray-900">Rent per day: Rs {bikeBySlug.price}</h1> */}
-
-//                 <h1 className="mb-1 text-xl font-normal text-gray-900">Rent per day: Rs {bikeBySlug.price}</h1>
-
-//                 <RangePicker format="DD MMMM YYYY" disabledDate={disabledDate} onChange={selectTimeSlots} className="mb-2" />
-//                 <div className="font-semibold">Total Days: {days}</div>
-
-//                 <div className="flex items-center">
-//                   <span className="text-xl font-medium text-gray-900 title-font">Price:</span>
-//                   <span className="ml-2 text-xl font-medium title-font">Rs {totalAmount}</span>
-
-//                   <Button
-//                     onClick={showModal}
-//                     disabled={!to || !from}
-//                     className="flex items-center px-6 py-2 ml-6 text-white border-0 rounded bg-orange focus:outline-none hover:bg-black hover:text-white"
-//                   >
-//                     Rent Now
-//                   </Button>
-
-//                   <Modal
-//                     title="Confirm your rental order?"
-//                     open={open}
-//                     onOk={submitModal}
-//                     onCancel={hideModal}
-//                     okText="Yes"
-//                     cancelText="No"
-//                     style={{ position: "relative", top: "40%" }}
-//                   />
-//                 </div>
-//                 {error && (
-//                   <span className="flex justify-start mt-3 ml-10">
-//                     <Error>{error}</Error>
-//                   </span>
-//                 )}
-//               </div>
-//             </div>
-//           </div>
-//         </section>
-//       ) : (
-//         <Spinner />
-//       )}
-//     </>
-//   );
-// };
-
-// export default Order;
-
-import React, { useEffect, useState } from "react";
-import moment from "moment";
-import { Button, Modal, DatePicker } from "antd";
-import { useNavigate, useParams } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
+import React, { useState, useEffect, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { getBikeBySlug } from "../redux/features/Bikes/bikeAction";
 import { AddOrder } from "../redux/features/Order/orderAction";
 import { clearFields } from "../redux/features/Order/orderSlice";
+import { DatePicker, Button, Modal, Tag, message as antMessage } from "antd";
+import { LockOutlined, CheckCircleOutlined, InfoCircleOutlined } from "@ant-design/icons";
+import moment from "moment";
 import Spinner from "../Helper/Spinner";
+import Loading from "./Loading";
 import Error from "../Helper/Error";
-import { toast } from "react-hot-toast";
+import Http from "../Helper/Http";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  faMotorcycle,
   faCalendarAlt,
   faGasPump,
-  faGauge,
-  faMotorcycle,
   faCalendarCheck,
   faMoneyBillWave,
   faRoad,
   faCog,
-  faCalendarTimes
+  faCalendarTimes,
+  faShieldHalved,
+  faArrowRight,
+  faCheck,
 } from "@fortawesome/free-solid-svg-icons";
 
-const base_url = "http://localhost:5001/";
 const { RangePicker } = DatePicker;
 
-const Order = () => {
+export default function Order() {
   const [error, setError] = useState("");
   const [from, setFrom] = useState();
   const [to, setTo] = useState();
   const [days, setDays] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [open, setOpen] = useState(false);
+  const [submittingOrder, setSubmittingOrder] = useState(false);
+
+  // 🔒 Booked / Locked date ranges for this bike
+  const [bookedSlots, setBookedSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
   const { slug } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const base_url = process.env.REACT_APP_API_URL || "http://localhost:5001";
 
-  const { loading, success } = useSelector((state) => state.order);
   const { bikeBySlug } = useSelector((state) => state.bike);
   const { userInfo } = useSelector((state) => state.auth);
 
@@ -220,20 +57,27 @@ const Order = () => {
     dispatch(getBikeBySlug(slug));
   }, [dispatch, slug]);
 
-  useEffect(() => {
-    if (success) {
-      toast.success("Your order has been placed");
-      dispatch(clearFields());
-      navigate("/");
+  // Fetch booked slots whenever bikeBySlug is loaded
+  const fetchBookedSlots = useCallback(async (bikeId) => {
+    if (!bikeId) return;
+    try {
+      setLoadingSlots(true);
+      const res = await Http.get(`/api/v1/order/bike-booked-slots/${bikeId}`);
+      if (res.data?.bookedSlots) {
+        setBookedSlots(res.data.bookedSlots);
+      }
+    } catch (e) {
+      console.warn("Could not fetch bike booked slots:", e?.message);
+    } finally {
+      setLoadingSlots(false);
     }
-  }, [success, navigate, dispatch]);
+  }, []);
 
   useEffect(() => {
-    if (error) {
-      setError("");
-      navigate("/login");
+    if (bikeBySlug?._id) {
+      fetchBookedSlots(bikeBySlug._id);
     }
-  }, [error, navigate]);
+  }, [bikeBySlug?._id, fetchBookedSlots]);
 
   useEffect(() => {
     if (bikeBySlug) {
@@ -241,29 +85,54 @@ const Order = () => {
     }
   }, [days, bikeBySlug]);
 
-  const disabledDate = (current) => current && current < moment().startOf("day");
+  // 🛑 Strict check to disable past dates AND any dates already booked by others
+  const disabledDate = (current) => {
+    if (!current) return false;
+    // 1. Disable past dates
+    if (current < moment().startOf("day")) return true;
+
+    // 2. Disable dates where this vehicle is already booked and locked
+    const currentStr = current.format("YYYY-MM-DD");
+    const isBooked = bookedSlots.some(
+      (slot) => currentStr >= slot.startDate && currentStr <= slot.endDate
+    );
+    return isBooked;
+  };
 
   const selectTimeSlots = (values) => {
-    if (!values || values.length < 2) {
+    if (!values || values.length === 0) {
+      setFrom(null);
+      setTo(null);
+      setDays(0);
+      return;
+    }
+    const [start, end] = values;
+    const startStr = start.format("YYYY-MM-DD");
+    const endStr = end.format("YYYY-MM-DD");
+
+    // 🛑 Concurrency check: Ensure no booked dates fall inside the selected range
+    const conflict = bookedSlots.find(
+      (slot) => startStr <= slot.endDate && endStr >= slot.startDate
+    );
+
+    if (conflict) {
+      antMessage.error(
+        `Selected dates overlap with an existing booking (${moment(conflict.startDate).format("DD MMM")} – ${moment(conflict.endDate).format("DD MMM")}). Please select available dates.`
+      );
       setFrom(null);
       setTo(null);
       setDays(0);
       return;
     }
 
-    // Format the start and end date
-    const start = values[0].format("YYYY-MM-DD");
-    const end = values[1].format("YYYY-MM-DD");
+    const duration = moment.duration(end.diff(start));
+    const calculatedDays = Math.max(1, Math.round(duration.asDays()));
 
-    // Set the start and end date in state
-    setFrom(start);
-    setTo(end);
-
-    // Calculate the days including both the start and end date
-    const rentalDays = values[1].diff(values[0], "days") + 1;  // Add 1 to include the end date
-    setDays(rentalDays);
+    setFrom(startStr);
+    setTo(endStr);
+    setDays(calculatedDays);
+    setError("");
   };
-
 
   const showModal = () => setOpen(true);
   const hideModal = () => setOpen(false);
@@ -271,174 +140,286 @@ const Order = () => {
   const submitModal = async () => {
     setOpen(false);
 
-    if (!userInfo) {
+    const currentUser =
+      userInfo ||
+      (localStorage.getItem("userInfo")
+        ? JSON.parse(localStorage.getItem("userInfo"))
+        : null);
+
+    if (!currentUser) {
       navigate("/login", {
-        state: { from: "/Terms", orderData: { from, to, totalAmount, bikeId: bikeBySlug._id } }
+        state: {
+          from: `/order/${slug}`,
+          orderData: { from, to, totalAmount, bikeId: bikeBySlug?._id },
+        },
       });
       return;
     }
 
-    navigate("/Terms", { state: { from, to, totalAmount, bikeId: bikeBySlug._id } });
-
     try {
+      setSubmittingOrder(true);
       const formData = {
         totalAmt: totalAmount,
         startDate: from,
         endDate: to,
-        bikeId: bikeBySlug._id,
+        bikeId: bikeBySlug?._id,
       };
 
       const data = await dispatch(AddOrder(formData));
 
+      // 🛑 Concurrency / date conflict protection check:
       if (data.error) {
-        setError(data.payload);
+        const errorMsg =
+          data.payload ||
+          "This vehicle was just booked by another user for these dates! Please choose different dates.";
+        setError(errorMsg);
+        antMessage.error(errorMsg);
         dispatch(clearFields());
+        // Refresh booked slots to reflect the newly locked dates
+        if (bikeBySlug?._id) {
+          fetchBookedSlots(bikeBySlug._id);
+        }
+        return; // 🛑 DO NOT NAVIGATE ON ERROR
       }
+
+      const orderId = data?.payload?._id;
+      navigate("/Terms", {
+        state: { from, to, totalAmount, bikeId: bikeBySlug?._id, orderId },
+      });
     } catch (err) {
       console.error("Order submission failed", err);
+      antMessage.error("Could not place order. Please try again.");
+    } finally {
+      setSubmittingOrder(false);
     }
   };
 
   return (
-    <div className="bg-gradient-to-br from-[#fff7f0] via-[#fde9dc] to-[#f8d9c6] min-h-screen py-8 px-4">
+    <div className="bg-slate-50 min-h-screen py-10 px-4 sm:px-6 lg:px-8">
       {bikeBySlug ? (
-        <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="md:flex">
-            {/* Bike Image */}
-            <div className="md:w-1/2">
-              <img
-                alt={bikeBySlug.name}
-                className="w-full h-full object-cover"
-                src={`${base_url}api/v1/bike/bike-photo/${bikeBySlug._id}`}
-              />
+        <div className="max-w-6xl mx-auto bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-2">
+            {/* Bike Visual Column */}
+            <div className="relative bg-slate-900 p-8 flex flex-col justify-between overflow-hidden">
+              <div className="relative z-10 flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 text-xs font-bold uppercase tracking-wider backdrop-blur">
+                  <FontAwesomeIcon icon={faShieldHalved} />
+                  Verified Fleet
+                </span>
+                <span className="text-xs font-semibold text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-md">
+                  {bikeBySlug.number || "Available"}
+                </span>
+              </div>
+
+              <div className="relative z-10 my-8 flex items-center justify-center">
+                <img
+                  alt={bikeBySlug.name}
+                  className="max-h-72 w-full object-contain rounded-2xl drop-shadow-2xl transition-transform hover:scale-105 duration-300"
+                  src={`${base_url}/api/v1/bike/bike-photo/${bikeBySlug._id}`}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = "/images/b1fleet.jpg";
+                  }}
+                />
+              </div>
+
+              {/* Highlights below image */}
+              <div className="relative z-10 grid grid-cols-3 gap-2 border-t border-slate-800/80 pt-4 text-center">
+                <div className="rounded-xl bg-slate-800/60 p-2.5">
+                  <p className="text-xs text-slate-400 font-medium">Category</p>
+                  <p className="text-sm font-bold text-white mt-0.5">{bikeBySlug.category?.name || "Motorcycle"}</p>
+                </div>
+                <div className="rounded-xl bg-slate-800/60 p-2.5">
+                  <p className="text-xs text-slate-400 font-medium">Engine</p>
+                  <p className="text-sm font-bold text-white mt-0.5">{bikeBySlug.cc || 350} CC</p>
+                </div>
+                <div className="rounded-xl bg-slate-800/60 p-2.5">
+                  <p className="text-xs text-slate-400 font-medium">Daily Rate</p>
+                  <p className="text-sm font-bold text-emerald-400 mt-0.5">₹{bikeBySlug.price}</p>
+                </div>
+              </div>
             </div>
 
-            {/* Bike Details */}
-            <div className="p-8 md:w-1/2">
-              <div className="flex items-center mb-4">
-                <FontAwesomeIcon icon={faMotorcycle} className="text-2xl text-[#A15E48] mr-2" />
-                <h1 className="text-3xl font-bold text-[#5a4239]">{bikeBySlug.name}</h1>
-              </div>
-
-              <p className="text-[#5a4239]/90 mb-6">{bikeBySlug.description}</p>
-
-              {/* Bike Specifications */}
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center">
-                  <FontAwesomeIcon icon={faMotorcycle} className="text-[#A15E48] w-5 mr-2" />
-                  <span className="text-[#5a4239]"><b>Category:</b> {bikeBySlug.category?.name || "N/A"}</span>
-                </div>
-                <div className="flex items-center">
-                  <FontAwesomeIcon icon={faCog} className="text-[#A15E48] w-5 mr-2" />
-                  <span className="text-[#5a4239]"><b>Start Type:</b> {bikeBySlug.startType}</span>
-                </div>
-                <div className="flex items-center">
-                  <FontAwesomeIcon icon={faCalendarAlt} className="text-[#A15E48] w-5 mr-2" />
-                  <span className="text-[#5a4239]"><b>Year:</b> {bikeBySlug.year}</span>
-                </div>
-                <div className="flex items-center">
-                  <FontAwesomeIcon icon={faRoad} className="text-[#A15E48] w-5 mr-2" />
-                  <span className="text-[#5a4239]"><b>Kilometers:</b> {bikeBySlug.kilometers} km</span>
-                </div>
-                <div className="flex items-center">
-                  <FontAwesomeIcon icon={faGasPump} className="text-[#A15E48] w-5 mr-2" />
-                  <span className="text-[#5a4239]"><b>Fuel Capacity:</b> {bikeBySlug.petrolCapacity} L</span>
-                </div>
-                {/* <div className="flex items-center">
-                  <FontAwesomeIcon icon={faGauge} className="text-[#A15E48] w-5 mr-2" />
-                  <span className="text-[#5a4239]"><b>Mileage:</b> {bikeBySlug.mileage || "N/A"} kmpl</span>
-                </div> */}
-              </div>
-
-              {/* Rental Details */}
-              <div className="bg-[#fff7f0] p-4 rounded-lg mb-6">
-                <div className="flex items-center mb-4">
-                  <FontAwesomeIcon icon={faMoneyBillWave} className="text-xl text-[#A15E48] mr-2" />
-                  <h2 className="text-xl font-semibold text-[#5a4239]">Rental Details</h2>
+            {/* Rental Configurator Column */}
+            <div className="p-8 sm:p-10 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                    {bikeBySlug.name}
+                  </h1>
+                  <span className="text-lg font-bold text-emerald-600">
+                    ₹{bikeBySlug.price} <span className="text-xs text-slate-500 font-normal">/ day</span>
+                  </span>
                 </div>
 
-                <div className="mb-4">
-                  <div className="flex items-center mb-2">
-                    <FontAwesomeIcon icon={faCalendarAlt} className="text-[#A15E48] mr-2" />
-                    <span className="text-[#5a4239] font-medium">Select Rental Period:</span>
+                <p className="text-slate-600 text-sm leading-relaxed mb-6">
+                  {bikeBySlug.description ||
+                    "Top-tier motorcycle with smooth suspension, verified disc brakes, and complete legal documentation for hassle-free rides."}
+                </p>
+
+                {/* Specs Pill List */}
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                      <FontAwesomeIcon icon={faCog} className="text-sm" />
+                    </span>
+                    <div>
+                      <p className="text-[11px] text-slate-400 font-semibold uppercase">Start Type</p>
+                      <p className="text-sm font-bold text-slate-800">{bikeBySlug.startType || "Self Start"}</p>
+                    </div>
                   </div>
+
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                      <FontAwesomeIcon icon={faCalendarAlt} className="text-sm" />
+                    </span>
+                    <div>
+                      <p className="text-[11px] text-slate-400 font-semibold uppercase">Model Year</p>
+                      <p className="text-sm font-bold text-slate-800">{bikeBySlug.year || "2023"}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                      <FontAwesomeIcon icon={faGasPump} className="text-sm" />
+                    </span>
+                    <div>
+                      <p className="text-[11px] text-slate-400 font-semibold uppercase">Fuel Capacity</p>
+                      <p className="text-sm font-bold text-slate-800">{bikeBySlug.petrolCapacity || 10} Litres</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
+                      <FontAwesomeIcon icon={faRoad} className="text-sm" />
+                    </span>
+                    <div>
+                      <p className="text-[11px] text-slate-400 font-semibold uppercase">Odometer</p>
+                      <p className="text-sm font-bold text-slate-800">{bikeBySlug.kilometers || 5000} km used</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 🔒 Live Availability & Locked Dates Notice */}
+                {bookedSlots.length > 0 ? (
+                  <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                    <div className="font-bold flex items-center gap-1.5 mb-1.5 text-amber-800 text-xs uppercase tracking-wider">
+                      <LockOutlined className="text-amber-600 text-sm" />
+                      Locked Dates for this Vehicle ({bookedSlots.length} active booking{bookedSlots.length > 1 ? "s" : ""})
+                    </div>
+                    <p className="text-[11px] text-amber-700 mb-2 leading-relaxed">
+                      This vehicle is already rented on the dates below. These dates are <strong>locked on the calendar</strong> and cannot be booked by any other user:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {bookedSlots.map((slot, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white text-amber-900 font-semibold text-xs border border-amber-300 shadow-xs"
+                        >
+                          <LockOutlined className="text-amber-600 text-[10px]" />
+                          {moment(slot.startDate).format("DD MMM YYYY")} – {moment(slot.endDate).format("DD MMM YYYY")}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mb-6 p-3 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2">
+                    <CheckCircleOutlined className="text-emerald-600 text-sm shrink-0" />
+                    <span>
+                      <strong>100% Available:</strong> No active bookings on this vehicle. Select any dates to reserve!
+                    </span>
+                  </div>
+                )}
+
+                {/* Rental Calculator Card */}
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <FontAwesomeIcon icon={faCalendarAlt} className="text-emerald-600 text-sm" />
+                    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                      Select Rental Duration
+                    </h2>
+                  </div>
+
                   <RangePicker
                     format="DD MMMM YYYY"
                     disabledDate={disabledDate}
                     onChange={selectTimeSlots}
-                    className="w-full"
+                    value={from && to ? [moment(from, "YYYY-MM-DD"), moment(to, "YYYY-MM-DD")] : null}
+                    className="w-full py-2.5 rounded-xl border-slate-300 shadow-sm"
                   />
-                </div>
 
-                {days > 0 && (
-                  <>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-[#5a4239] flex items-center">
-                        <FontAwesomeIcon icon={faCalendarCheck} className="mr-2 text-[#A15E48]" />
-                        Rental Days:
-                      </span>
-                      <span className="font-semibold text-[#5a4239]">{days} days</span>
+                  {days > 0 && (
+                    <div className="mt-4 pt-4 border-t border-slate-200/80 space-y-2 text-sm">
+                      <div className="flex justify-between text-slate-600">
+                        <span>Duration:</span>
+                        <span className="font-semibold text-slate-800">{days} day(s)</span>
+                      </div>
+                      <div className="flex justify-between text-slate-600">
+                        <span>Daily Rate:</span>
+                        <span className="font-semibold text-slate-800">₹{bikeBySlug.price}</span>
+                      </div>
+                      <div className="flex justify-between items-baseline pt-2 border-t border-slate-200">
+                        <span className="font-bold text-slate-900">Total Payable:</span>
+                        <span className="text-2xl font-black text-emerald-600">₹{totalAmount}</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-[#5a4239] flex items-center">
-                        <FontAwesomeIcon icon={faMoneyBillWave} className="mr-2 text-[#A15E48]" />
-                        Daily Rate:
-                      </span>
-                      <span className="font-semibold text-[#5a4239]">₹{bikeBySlug.price}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[#5a4239] flex items-center">
-                        <FontAwesomeIcon icon={faMoneyBillWave} className="mr-2 text-[#A15E48]" />
-                        Total Amount:
-                      </span>
-                      <span className="font-bold text-xl text-[#8B4D3A]">₹{totalAmount}</span>
-                    </div>
-                  </>
-                )}
+                  )}
+                </div>
               </div>
 
-              {/* Rent Button */}
-              <Button
-                onClick={showModal}
-                disabled={!to || !from}
-                className="w-full py-4 bg-gradient-to-r from-[#8B4D3A] to-[#A15E48] text-white text-lg font-semibold rounded-lg hover:from-[#733F30] hover:to-[#8B4D3A] flex items-center justify-center gap-2"
-              >
-                <FontAwesomeIcon icon={faMotorcycle} />
-                Rent Now
-              </Button>
+              {/* Action Button */}
+              <div>
+                <button
+                  type="button"
+                  onClick={showModal}
+                  disabled={!to || !from || submittingOrder}
+                  className={`w-full py-3.5 px-6 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
+                    to && from && !submittingOrder
+                      ? "bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer"
+                      : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                  }`}
+                >
+                  <FontAwesomeIcon icon={faMotorcycle} />
+                  <span>
+                    {submittingOrder
+                      ? "Securing Booking..."
+                      : to && from
+                      ? `Proceed to Book · ₹${totalAmount}`
+                      : "Select Available Dates"}
+                  </span>
+                </button>
+              </div>
 
               {/* Confirmation Modal */}
               <Modal
                 title={
-                  <div className="flex items-center">
-                    <FontAwesomeIcon icon={faCalendarCheck} className="text-[#A15E48] mr-2" />
-                    <span>Confirm Rental</span>
+                  <div className="flex items-center gap-2 text-slate-900 font-bold">
+                    <FontAwesomeIcon icon={faCalendarCheck} className="text-emerald-600" />
+                    <span>Confirm Rental Booking</span>
                   </div>
                 }
                 open={open}
                 onOk={submitModal}
+                confirmLoading={submittingOrder}
                 onCancel={hideModal}
-                okText={
-                  <span className="flex items-center gap-2">
-                    <FontAwesomeIcon icon={faCalendarCheck} />
-                    Confirm
-                  </span>
-                }
-                cancelText={
-                  <span className="flex items-center gap-2">
-                    <FontAwesomeIcon icon={faCalendarTimes} />
-                    Cancel
-                  </span>
-                }
+                okText="Proceed to Terms & Payment"
                 okButtonProps={{
-                  className: "bg-[#8B4D3A] hover:bg-[#5a4239] border-none"
-                }}
-                cancelButtonProps={{
-                  className: "hover:bg-gray-100"
+                  className: "bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold border-none",
                 }}
               >
-                <p className="text-[#5a4239]">Are you sure you want to rent {bikeBySlug.name} for {days} days?</p>
-                <p className="font-semibold text-[#8B4D3A] mt-2">Total Amount: ₹{totalAmount}</p>
+                <div className="py-3 space-y-3 text-slate-700">
+                  <p>
+                    You are booking <strong>{bikeBySlug.name}</strong> for <strong>{days} day(s)</strong>:
+                  </p>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                    <div><strong>Start Date:</strong> {moment(from).format("DD MMMM YYYY")}</div>
+                    <div><strong>End Date:</strong> {moment(to).format("DD MMMM YYYY")}</div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-100 flex justify-between items-center">
+                    <span className="text-sm font-semibold">Total Amount:</span>
+                    <span className="text-xl font-extrabold text-emerald-600">₹{totalAmount}</span>
+                  </div>
+                </div>
               </Modal>
 
               {error && (
@@ -450,14 +431,10 @@ const Order = () => {
           </div>
         </div>
       ) : (
-        <div className="flex justify-center items-center h-64">
-          <Spinner />
+        <div className="flex justify-center items-center py-20">
+          <Loading fullScreen={false} message="Loading vehicle specifications..." />
         </div>
       )}
     </div>
   );
-};
-
-export default Order;
-
-
+}
