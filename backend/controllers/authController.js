@@ -866,10 +866,15 @@ export const AllUsersController = async (req, res) => {
       return res.status(200).send({ success: true, users: [] });
     }
 
-    // Attach order counts
+    // Attach order counts (only count confirmed, active, or delivered rentals)
     let orderCountMap = {};
     try {
-      const orders = await orderModel.find({}, "renter");
+      const orders = await orderModel.find(
+        {
+          status: { $in: ["Processing", "Shipped", "Delivered"] },
+        },
+        "renter"
+      );
       orders.forEach((o) => {
         if (o.renter) {
           const id = o.renter.toString();

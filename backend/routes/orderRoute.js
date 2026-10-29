@@ -9,6 +9,7 @@ import {
   getBikeBookedSlotsController,
 } from "../controllers/orderController.js";
 import BikeOrder from "../models/orderModel.js";
+import userModel from "../models/userModel.js";
 
 const router = express.Router();
 
@@ -35,6 +36,13 @@ router.put("/update-status/:orderId", requireSignIn, async (req, res) => {
   const { status, paymentId } = req.body;
 
   try {
+    const user = await userModel.findById(req.user._id);
+    if (!user || !user.licenseNumber) {
+      return res.status(403).json({
+        message: "Cannot confirm booking without a verified Driving License on record.",
+      });
+    }
+
     const updatedOrder = await BikeOrder.findByIdAndUpdate(
       req.params.orderId,
       { status, paymentId },

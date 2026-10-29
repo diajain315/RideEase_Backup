@@ -87,15 +87,28 @@ const UserTable = ({ searchText = "" }) => {
       dataIndex: "licenseNumber",
       key: "licenseNumber",
       align: "center",
-      render: (license) => (
-        license ? (
-          <span className="text-xs font-mono font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-            {license}
-          </span>
-        ) : (
+      render: (license, record) => {
+        if (license) {
+          return (
+            <span className="text-xs font-mono font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center gap-1.5">
+              <CheckCircleOutlined className="text-emerald-600" />
+              {license}
+            </span>
+          );
+        }
+        if (record.ordersCount > 0) {
+          return (
+            <Tooltip title="Rented before strict AI verification was activated. System will enforce license upload before next rental.">
+              <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 inline-block cursor-help">
+                Missing (Action Required)
+              </span>
+            </Tooltip>
+          );
+        }
+        return (
           <span className="text-xs text-slate-400">Not Uploaded</span>
-        )
-      ),
+        );
+      },
     },
     {
       title: "Registered Date",

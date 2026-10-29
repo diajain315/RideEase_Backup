@@ -54,6 +54,15 @@ export default function Terms() {
   const [licenseNumber, setLicenseNumber] = useState("");
   const [licenseError, setLicenseError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isChangingLicense, setIsChangingLicense] = useState(false);
+
+  // Check if current user already has a verified license on record
+  const currentUser =
+    userInfo ||
+    (localStorage.getItem("userInfo")
+      ? JSON.parse(localStorage.getItem("userInfo"))
+      : null);
+  const hasExistingLicense = Boolean(currentUser?.licenseNumber);
 
   // 🔍 Driving License Verification State
   const [docVerifying, setDocVerifying] = useState(false);
@@ -124,19 +133,19 @@ export default function Terms() {
   };
 
   const checkoutHandler = async (amount) => {
-    if (docVerification && !docVerification.isValid) {
-      message.error("Please upload a valid Driving License document before paying.");
-      return;
+    if (!hasExistingLicense || isChangingLicense) {
+      if (!fileList || !licenseNumber) {
+        message.error("You must enter your license number and upload a valid Driving License before paying.");
+        return;
+      }
+      if (docVerification && !docVerification.isValid) {
+        message.error("Uploaded document does not appear to be an official Driving License. Please upload a clear photo of your Driving License.");
+        return;
+      }
     }
 
     setSubmitting(true);
     try {
-      const currentUser =
-        userInfo ||
-        (localStorage.getItem("userInfo")
-          ? JSON.parse(localStorage.getItem("userInfo"))
-          : null);
-
       if (!currentUser) {
         message.error("Please login to proceed with booking.");
         navigate("/login");
@@ -154,6 +163,10 @@ export default function Terms() {
           setSubmitting(false);
           return; // 🛑 DO NOT PROCEED TO PAYMENT IF LICENSE REJECTED
         }
+
+        // Update local session
+        const updatedUser = { ...currentUser, licenseNumber };
+        localStorage.setItem("userInfo", JSON.stringify(updatedUser));
       }
 
       const { data: keyData } = await Http.get("/api/v1/getKey");
@@ -278,82 +291,131 @@ export default function Terms() {
 
           {/* Driving License Section */}
           <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 mb-8 space-y-5">
-            <div className="flex items-center gap-2">
-              <FontAwesomeIcon icon={faIdCard} className="text-emerald-600" />
-              <h2 className="text-base font-bold text-slate-900">
-                Driver Identification
-              </h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FontAwesomeIcon icon={faIdCard} className="text-emerald-600" />
+                <h2 className="text-base font-bold text-slate-900">
+                  Driver Identification & License
+                </h2>
+              </div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                KYC Mandatory
+              </span>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
-                Driving License Number
-              </label>
-              <Input
-                placeholder="e.g. RJ27-20210012345"
-                size="large"
-                className="rounded-xl"
-                value={licenseNumber}
-                onChange={(e) => {
-                  setLicenseNumber(e.target.value);
-                  setLicenseError(!validateLicense(e.target.value));
-                }}
-              />
-              {licenseError && (
-                <p className="text-xs text-rose-500 font-semibold mt-1">
-                  Please enter a valid driving license number (8–18 characters).
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
-                Upload License Document (Photo or PDF)
-              </label>
-              <Upload
-                beforeUpload={beforeUpload}
-                maxCount={1}
-                accept="image/*,.pdf"
-                className="w-full"
-                showUploadList={false}
-              >
+            {hasExistingLicense && !isChangingLicense ? (
+              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <CheckCircleFilled className="text-emerald-600 text-xl shrink-0" />
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 block">
+                      Verified Driving License on Record
+                    </span>
+                    <span className="font-mono text-sm font-bold text-emerald-950">
+                      {currentUser.licenseNumber}
+                    </span>
+                  </div>
+                </div>
                 <button
                   type="button"
-                  className="w-full py-3 px-4 border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl bg-white text-slate-600 font-medium text-sm flex items-center justify-center gap-2 transition cursor-pointer"
+                  onClick={() => {
+                    setIsChangingLicense(true);
+                    setLicenseNumber(currentUser.licenseNumber || "");
+                  }}
+                  className="text-xs text-emerald-700 hover:text-emerald-900 underline font-semibold cursor-pointer shrink-0"
                 >
-                  <UploadOutlined className="text-emerald-600 text-base" />
-                  <span>{fileList ? fileList.name : "Click to select Driving License file"}</span>
+                  Change / Upload New
                 </button>
-              </Upload>
-
-              {/* Real-time Document Verification Feedback */}
-              {docVerifying && (
-                <div className="mt-2.5 p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-800 flex items-center gap-2 font-medium">
-                  <LoadingOutlined className="text-blue-600 text-sm animate-spin" />
-                  <span>Scanning & verifying Driving License authenticity...</span>
-                </div>
-              )}
-
-              {docVerification && docVerification.isValid && (
-                <div className="mt-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-start gap-2 font-medium">
-                  <CheckCircleFilled className="text-emerald-600 text-sm mt-0.5 shrink-0" />
-                  <div>
-                    <span className="font-bold block">Document Verified:</span>
-                    <span>{docVerification.message}</span>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {isChangingLicense && (
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsChangingLicense(false);
+                        setFileList(null);
+                        setDocVerification(null);
+                      }}
+                      className="text-xs text-slate-500 hover:text-slate-800 underline font-medium cursor-pointer"
+                    >
+                      Use existing license on file ({currentUser.licenseNumber})
+                    </button>
                   </div>
-                </div>
-              )}
+                )}
 
-              {docVerification && !docVerification.isValid && (
-                <div className="mt-2.5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start gap-2 font-medium">
-                  <CloseCircleFilled className="text-rose-600 text-sm mt-0.5 shrink-0" />
-                  <div>
-                    <span className="font-bold block">Document Check Failed:</span>
-                    <span>{docVerification.message}</span>
-                  </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                    Driving License Number *
+                  </label>
+                  <Input
+                    placeholder="e.g. RJ27-20210012345"
+                    size="large"
+                    className="rounded-xl"
+                    value={licenseNumber}
+                    onChange={(e) => {
+                      setLicenseNumber(e.target.value);
+                      setLicenseError(!validateLicense(e.target.value));
+                    }}
+                  />
+                  {licenseError && (
+                    <p className="text-xs text-rose-500 font-semibold mt-1">
+                      Please enter a valid driving license number (8–18 characters).
+                    </p>
+                  )}
                 </div>
-              )}
-            </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                    Upload License Document (Photo or PDF) *
+                  </label>
+                  <Upload
+                    beforeUpload={beforeUpload}
+                    maxCount={1}
+                    accept="image/*,.pdf"
+                    className="w-full"
+                    showUploadList={false}
+                  >
+                    <button
+                      type="button"
+                      className="w-full py-3 px-4 border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl bg-white text-slate-600 font-medium text-sm flex items-center justify-center gap-2 transition cursor-pointer"
+                    >
+                      <UploadOutlined className="text-emerald-600 text-base" />
+                      <span>{fileList ? fileList.name : "Click to select Driving License file"}</span>
+                    </button>
+                  </Upload>
+
+                  {/* Real-time Document Verification Feedback */}
+                  {docVerifying && (
+                    <div className="mt-2.5 p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-800 flex items-center gap-2 font-medium">
+                      <LoadingOutlined className="text-blue-600 text-sm animate-spin" />
+                      <span>Scanning & verifying Driving License authenticity...</span>
+                    </div>
+                  )}
+
+                  {docVerification && docVerification.isValid && (
+                    <div className="mt-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-start gap-2 font-medium">
+                      <CheckCircleFilled className="text-emerald-600 text-sm mt-0.5 shrink-0" />
+                      <div>
+                        <span className="font-bold block">Document Verified:</span>
+                        <span>{docVerification.message}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {docVerification && !docVerification.isValid && (
+                    <div className="mt-2.5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start gap-2 font-medium">
+                      <CloseCircleFilled className="text-rose-600 text-sm mt-0.5 shrink-0" />
+                      <div>
+                        <span className="font-bold block">Document Check Failed:</span>
+                        <span>{docVerification.message}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Terms Checklist */}
@@ -379,37 +441,37 @@ export default function Terms() {
           </div>
 
           {/* Payment CTA */}
-          <button
-            type="button"
-            onClick={() => checkoutHandler(price)}
-            disabled={
+          {(() => {
+            const isLicenseReady =
+              (hasExistingLicense && !isChangingLicense) ||
+              (fileList && licenseNumber && !licenseError && (!docVerification || docVerification.isValid));
+            const isDisabled =
               !agreed ||
-              !fileList ||
-              !licenseNumber ||
-              licenseError ||
               submitting ||
               docVerifying ||
-              (docVerification && !docVerification.isValid)
-            }
-            className={`w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
-              agreed &&
-              fileList &&
-              licenseNumber &&
-              !licenseError &&
-              !submitting &&
-              !docVerifying &&
-              (!docVerification || docVerification.isValid)
-                ? "bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/25 active:scale-95 cursor-pointer"
-                : "bg-slate-200 text-slate-400 cursor-not-allowed"
-            }`}
-          >
-            <FontAwesomeIcon icon={faCreditCard} />
-            <span>
-              {submitting
-                ? "Connecting to Payment Gateway..."
-                : `Proceed to Pay ₹${price}`}
-            </span>
-          </button>
+              !isLicenseReady ||
+              (docVerification && !docVerification.isValid);
+
+            return (
+              <button
+                type="button"
+                onClick={() => checkoutHandler(price)}
+                disabled={isDisabled}
+                className={`w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
+                  !isDisabled
+                    ? "bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/25 active:scale-95 cursor-pointer"
+                    : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                }`}
+              >
+                <FontAwesomeIcon icon={faCreditCard} />
+                <span>
+                  {submitting
+                    ? "Connecting to Payment Gateway..."
+                    : `Proceed to Pay ₹${price}`}
+                </span>
+              </button>
+            );
+          })()}
         </div>
       </div>
     </div>
