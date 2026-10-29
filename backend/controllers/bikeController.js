@@ -183,7 +183,7 @@
         .find({})
         .populate("category", "-photo")
         .select("-photo")
-        .limit(10)
+        .limit(100)
         .sort({ createdAt: -1 });
       res.status(200).send({
         success: true,
