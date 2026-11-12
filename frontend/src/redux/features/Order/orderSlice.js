@@ -72,11 +72,12 @@ const orderSlice = createSlice({
       })
       .addCase(updateStatus.fulfilled, (state, { payload }) => {
         state.loading = false;
-        const updatedOrder = state.orders.find(
-          (order) => order._id === payload._id
+        const updatedPayload = payload?.updatedOrder || payload;
+        const updatedOrder = state.orders?.find(
+          (order) => order._id === updatedPayload?._id
         );
-        if (updatedOrder) {
-          updatedOrder.status = payload.status;
+        if (updatedOrder && updatedPayload?.status) {
+          updatedOrder.status = updatedPayload.status;
         }
       })
       .addCase(updateStatus.rejected, (state, { payload }) => {

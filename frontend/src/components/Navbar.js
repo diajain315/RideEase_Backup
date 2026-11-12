@@ -102,10 +102,18 @@ export default function Navbar({ scrolled }) {
                 <Menu.Button className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 py-1 pl-1.5 pr-3 text-xs font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-slate-100 focus:outline-none">
                   <img
                     src={
-                      displayUserInfo.gender === "female"
+                      displayUserInfo.avatar ||
+                      (displayUserInfo.gender === "female"
                         ? "/avatarfemale.jpeg"
-                        : "/avatarmale.png"
+                        : "/avatarmale.png")
                     }
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src =
+                        displayUserInfo.gender === "female"
+                          ? "/avatarfemale.jpeg"
+                          : "/avatarmale.png";
+                    }}
                     alt="avatar"
                     className="h-7 w-7 rounded-full object-cover ring-2 ring-emerald-500/30"
                   />

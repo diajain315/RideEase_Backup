@@ -1,5 +1,44 @@
 import mongoose from "mongoose";
 
+// Paid vehicle rental lifecycle statuses exposed to Admin & Customer UI
+export const RENTAL_STATUSES = [
+  "Booked (Pending Approval)",
+  "Approved",
+  "Riding",
+  "Returned",
+  "Did Not Ride",
+  "Rejected",
+];
+
+// Internal pre-payment checkout lock statuses (never exposed as paid bookings)
+export const PENDING_CHECKOUT_STATUSES = [
+  "Checkout Hold",
+  "Payment Pending",
+  "Not Processed",
+];
+
+export const ACTIVE_LOCKING_STATUSES = [
+  "Booked (Pending Approval)",
+  "Approved",
+  "Riding",
+  "In Process",
+  "Active Ride",
+  "Processing",
+  "Shipped",
+];
+
+export const COMPLETED_OR_ACTIVE_RENTAL_STATUSES = [
+  "Booked (Pending Approval)",
+  "Approved",
+  "Riding",
+  "Returned",
+  "In Process",
+  "Active Ride",
+  "Processing",
+  "Shipped",
+  "Delivered",
+];
+
 const orderSchema = new mongoose.Schema(
   {
     bikes: {
@@ -13,13 +52,17 @@ const orderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      default: "Not Processed",
+      default: "Checkout Hold",
       enum: [
-        "Not Processed",
+        ...RENTAL_STATUSES,
+        ...PENDING_CHECKOUT_STATUSES,
+        "In Process",
+        "Active Ride",
+        "Cancelled (Invalid Proof)",
+        "Cancelled",
         "Processing",
         "Shipped",
         "Delivered",
-        "Cancelled",
       ],
     },
     paymentId: {

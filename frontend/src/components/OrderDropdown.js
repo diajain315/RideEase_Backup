@@ -7,14 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMotorcycle, faCalendarAlt, faListCheck, faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import Layout from "./Layout";
 import moment from "moment";
-
-const statusColors = {
-  "Not Processed": "orange",
-  Processing: "blue",
-  Shipped: "cyan",
-  Delivered: "emerald",
-  Cancelled: "red",
-};
+import { RENTAL_STATUS_COLORS, normalizeRentalStatus } from "../common/rentalStatuses";
 
 const OrderDropdown = () => {
   const dispatch = useDispatch();
@@ -88,9 +81,14 @@ const OrderDropdown = () => {
       key: "status",
       align: "center",
       render: (status) => (
-        <Tag color={statusColors[status] || "default"} className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
-          {status || "Confirmed"}
-        </Tag>
+        (() => {
+        const label = normalizeRentalStatus(status);
+        return (
+          <Tag color={RENTAL_STATUS_COLORS[label] || "default"} className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
+            {label}
+          </Tag>
+        );
+      })()
       ),
     },
   ];

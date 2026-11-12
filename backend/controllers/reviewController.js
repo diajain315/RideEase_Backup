@@ -1,5 +1,5 @@
 import Review from "../models/reviewModel.js";
-import orderModel from "../models/orderModel.js";
+import orderModel, { COMPLETED_OR_ACTIVE_RENTAL_STATUSES } from "../models/orderModel.js";
 
 /**
  * Add a new customer review.
@@ -21,7 +21,7 @@ export const addReview = async (req, res) => {
     // Check if the user has at least one confirmed rental order
     const rentalCount = await orderModel.countDocuments({
       renter: userId,
-      status: { $in: ["Processing", "Shipped", "Delivered"] },
+      status: { $in: COMPLETED_OR_ACTIVE_RENTAL_STATUSES },
     });
     if (rentalCount === 0) {
       return res.status(403).json({
@@ -84,7 +84,7 @@ export const checkReviewEligibility = async (req, res) => {
 
     const rentalCount = await orderModel.countDocuments({
       renter: userId,
-      status: { $in: ["Processing", "Shipped", "Delivered"] },
+      status: { $in: COMPLETED_OR_ACTIVE_RENTAL_STATUSES },
     });
     if (rentalCount === 0) {
       return res.status(200).json({

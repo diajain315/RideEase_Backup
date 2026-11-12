@@ -9,10 +9,14 @@ import { store } from "./redux/store";
 import { Provider } from "react-redux";
 import { ConfigProvider } from "antd";
 import en_US from "antd/locale/en_US";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+
+const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || "placeholder-client-id";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
-  <Provider store={store}>
+  <GoogleOAuthProvider clientId={googleClientId}>
+    <Provider store={store}>
     <ConfigProvider
       locale={en_US}
       theme={{
@@ -45,7 +49,8 @@ root.render(
         />
       </BrowserRouter>
     </ConfigProvider>
-  </Provider>
+    </Provider>
+  </GoogleOAuthProvider>
 );
 
 reportWebVitals();

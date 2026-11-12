@@ -6,6 +6,7 @@ import { userLogin } from "../redux/features/User/authAction";
 import { clearFields } from "../redux/features/User/authSlice";
 import Layout from "./Layout";
 import Error from "../Helper/Error";
+import GoogleAuthButton from "./GoogleAuthButton";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faKey, faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import { faEnvelope } from "@fortawesome/free-regular-svg-icons";
@@ -158,6 +159,18 @@ const Login = () => {
               {loading ? <Spinner /> : "Sign In"}
             </button>
           </form>
+
+          {/* Divider + Google Sign-In */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-3 text-slate-400 font-semibold tracking-wider">Or</span>
+            </div>
+          </div>
+
+          <GoogleAuthButton label="Continue with Google" onError={setErrors} />
 
           {/* Create account section */}
           <div className="mt-8 pt-6 border-t border-slate-100 text-center">

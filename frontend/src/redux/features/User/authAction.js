@@ -36,6 +36,24 @@ export const userLogin = createAsyncThunk(
   }
 );
 
+// ✅ Google OAuth Login / Signup
+export const googleLogin = createAsyncThunk(
+  "user/googleLogin",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const data = await Http.post(`/api/v1/auth/google-login`, payload);
+      localStorage.setItem("userToken", data.data.token);
+      return data.data;
+    } catch (error) {
+      if (error.response && error.response.data.message) {
+        return rejectWithValue(error.response.data.message);
+      } else {
+        return rejectWithValue(error.message);
+      }
+    }
+  }
+);
+
 // ✅ Register User
 export const userRegister = createAsyncThunk(
   "user/register",

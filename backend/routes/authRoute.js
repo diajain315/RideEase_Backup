@@ -3,6 +3,7 @@ import {
   AllUsersController,
   forgotPasswordController,
   loginController,
+  googleLoginController,
   registerController,
   userProfileController,
   verifyOtpController,
@@ -24,6 +25,14 @@ router.post("/register", registerController);
 
 // LOGIN '' METHOD POST
 router.post("/login", loginController);
+
+// GOOGLE LOGIN '' METHOD POST
+router.post("/google-login", googleLoginController);
+
+// GOOGLE CLIENT ID '' METHOD GET
+router.get("/google-client-id", (req, res) =>
+  res.status(200).send({ clientId: process.env.GOOGLE_CLIENT_ID || "" })
+);
 
 // USERlOGGEDIN STATUS '' METHOD GET
 router.get("/me", requireSignIn, userProfileController);

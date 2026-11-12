@@ -7,16 +7,13 @@ import { AllOrder, updateStatus } from "../../../redux/features/Order/orderActio
 import toast from "react-hot-toast";
 import moment from "moment";
 import Layout from "../../../components/Layout";
+import {
+  RENTAL_STATUS_OPTIONS,
+  RENTAL_STATUS_COLORS,
+  normalizeRentalStatus,
+} from "../../../common/rentalStatuses";
 
 const { Option } = Select;
-
-const statusColors = {
-  "Not Processed": "orange",
-  Processing: "blue",
-  Shipped: "cyan",
-  Delivered: "green",
-  Cancelled: "red",
-};
 
 const Ordertable = () => {
   const dispatch = useDispatch();
@@ -36,18 +33,22 @@ const Ordertable = () => {
     });
   }, [dispatch]);
 
-  const statusOptions = useMemo(
-    () => ["Not Processed", "Processing", "Shipped", "Delivered", "Cancelled"],
-    []
-  );
+  const statusOptions = useMemo(() => RENTAL_STATUS_OPTIONS, []);
 
-  const handleChange = (orderId, value) => {
+  const handleChange = async (orderId, value) => {
+    const previousOrders = localOrders;
     setLocalOrders((prev) =>
       prev.map((order) =>
         order._id === orderId ? { ...order, status: value } : order
       )
     );
-    dispatch(updateStatus({ orderId, status: value }));
+    try {
+      await dispatch(updateStatus({ orderId, status: value })).unwrap();
+      toast.success(`Booking status updated to "${value}"`);
+    } catch (err) {
+      setLocalOrders(previousOrders);
+      toast.error(typeof err === "string" ? err : "Failed to update booking status");
+    }
   };
 
   const downloadCSV = () => {
@@ -79,7 +80,7 @@ const Ordertable = () => {
         order?.totalAmt || "",
         startDate,
         endDate,
-        order?.status || ""
+        normalizeRentalStatus(order?.status)
       ];
     });
 
@@ -164,13 +165,13 @@ const Ordertable = () => {
       align: "center",
       render: (status, record) => (
         <Select
-          value={status}
-          className="w-36 text-xs"
+          value={normalizeRentalStatus(status)}
+          className="w-52 text-xs"
           onChange={(value) => handleChange(record._id, value)}
         >
           {statusOptions.map((option) => (
             <Option key={option} value={option}>
-              <Tag color={statusColors[option] || "default"} className="rounded-full px-2 py-0 text-[11px] font-semibold">
+              <Tag color={RENTAL_STATUS_COLORS[option] || "default"} className="rounded-full px-2 py-0 text-[11px] font-semibold">
                 {option}
               </Tag>
             </Option>

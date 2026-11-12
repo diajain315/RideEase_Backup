@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import {
   userLogin,
+  googleLogin,
   userRegister,
   userAll,
   LoggedInUser,
@@ -113,7 +114,9 @@ const authSlice = createSlice({
           email: payload.user.email,
           _id: payload.user._id,
           role: payload.user.role || 0,
-          gender: payload.user.gender || "male"
+          gender: payload.user.gender || "other",
+          phone: payload.user.phone || "",
+          avatar: payload.user.avatar || ""
         };
         localStorage.setItem("userInfo", JSON.stringify(userData));
       } catch (error) {
@@ -122,6 +125,42 @@ const authSlice = createSlice({
       }
     },
     [userLogin.rejected]: (state, { payload }) => {
+      state.loading = false;
+      state.error = payload;
+    },
+
+    // google login user
+    [googleLogin.pending]: (state) => {
+      state.loading = true;
+      state.error = null;
+    },
+    [googleLogin.fulfilled]: (state, { payload }) => {
+      try {
+        state.loading = false;
+        state.success = true;
+        state.userInfo = payload.user;
+        state.userToken = payload.token;
+        localStorage.setItem("userToken", payload.token);
+        if (payload.serverInstanceId) {
+          localStorage.setItem("serverInstanceId", payload.serverInstanceId);
+        }
+
+        const userData = {
+          name: payload.user.name,
+          email: payload.user.email,
+          _id: payload.user._id,
+          role: payload.user.role || 0,
+          gender: payload.user.gender || "other",
+          phone: payload.user.phone || "",
+          avatar: payload.user.avatar || ""
+        };
+        localStorage.setItem("userInfo", JSON.stringify(userData));
+      } catch (error) {
+        state.loading = false;
+        state.error = "Invalid token received";
+      }
+    },
+    [googleLogin.rejected]: (state, { payload }) => {
       state.loading = false;
       state.error = payload;
     },
@@ -149,7 +188,9 @@ const authSlice = createSlice({
             email: payload.user.email,
             _id: payload.user._id,
             role: payload.user.role || 0,
-            gender: payload.user.gender || "male"
+            gender: payload.user.gender || "other",
+          phone: payload.user.phone || "",
+          avatar: payload.user.avatar || ""
           };
           localStorage.setItem("userInfo", JSON.stringify(userData));
         }

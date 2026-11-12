@@ -6,6 +6,7 @@ import { Formik, ErrorMessage } from "formik";
 import { ValidateUser } from "../common/Validation";
 import { clearFields } from "../redux/features/User/authSlice";
 import Error from "../Helper/Error";
+import GoogleAuthButton from "./GoogleAuthButton";
 import Layout from "./Layout";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faKey, faUser, faPhone, faEnvelope, faUserPlus } from "@fortawesome/free-solid-svg-icons";
@@ -13,7 +14,7 @@ import { faKey, faUser, faPhone, faEnvelope, faUserPlus } from "@fortawesome/fre
 const Signup = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { success } = useSelector((state) => state.auth);
+  const { success, userInfo } = useSelector((state) => state.auth);
   const [errors, setErrors] = useState("");
 
   useEffect(() => {
@@ -21,11 +22,16 @@ const Signup = () => {
   }, []);
 
   useEffect(() => {
+    if (userInfo) {
+      dispatch(clearFields());
+      navigate(userInfo.role === 1 ? "/admin" : "/");
+      return;
+    }
     if (success) {
       dispatch(clearFields());
       navigate("/login");
     }
-  }, [success, dispatch, navigate]);
+  }, [success, userInfo, dispatch, navigate]);
 
   return (
     <Layout title={"RideEase : Create Account"}>
@@ -251,6 +257,17 @@ const Signup = () => {
               </form>
             )}
           </Formik>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-3 text-slate-400 font-semibold tracking-wider">Or</span>
+            </div>
+          </div>
+
+          <GoogleAuthButton label="Sign up with Google" onError={setErrors} />
 
           <div className="mt-8 pt-6 border-t border-slate-100 text-center">
             <p className="text-xs text-slate-500">

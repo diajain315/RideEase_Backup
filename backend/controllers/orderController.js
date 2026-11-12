@@ -1,4 +1,8 @@
-import orderModel from "../models/orderModel.js";
+import orderModel, {
+  RENTAL_STATUSES,
+  PENDING_CHECKOUT_STATUSES,
+  ACTIVE_LOCKING_STATUSES,
+} from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
 
 // 🔒 Get all booked/locked date slots for a specific vehicle
@@ -16,8 +20,8 @@ export const getBikeBookedSlotsController = async (req, res) => {
         bikes: bikeId,
         endDate: { $gte: today },
         $or: [
-          { status: { $in: ["Processing", "Shipped", "Delivered"] } },
-          { status: "Not Processed", createdAt: { $gte: checkoutExpiryTime } },
+          { status: { $in: ACTIVE_LOCKING_STATUSES } },
+          { status: { $in: PENDING_CHECKOUT_STATUSES }, createdAt: { $gte: checkoutExpiryTime } },
         ],
       })
       .select("startDate endDate status");
@@ -66,8 +70,8 @@ export const makeOrderController = async (req, res) => {
       startDate: { $lte: endDate },
       endDate: { $gte: startDate },
       $or: [
-        { status: { $in: ["Processing", "Shipped", "Delivered"] } },
-        { status: "Not Processed", createdAt: { $gte: checkoutExpiryTime } },
+        { status: { $in: ACTIVE_LOCKING_STATUSES } },
+        { status: { $in: PENDING_CHECKOUT_STATUSES }, createdAt: { $gte: checkoutExpiryTime } },
       ],
     });
 
@@ -82,6 +86,7 @@ export const makeOrderController = async (req, res) => {
     const order = new orderModel({
       renter: req.user._id,
       bikes: bikeId,
+      status: "Checkout Hold",
       totalAmt,
       startDate,
       endDate,
@@ -107,7 +112,7 @@ export const makeOrderController = async (req, res) => {
 export const getOrdersController = async (req, res) => {
   try {
     const orders = await orderModel
-      .find({ renter: req.user._id })
+      .find({ renter: req.user._id, status: { $nin: PENDING_CHECKOUT_STATUSES } })
       .populate("bikes", "-photo")
       .populate("renter", "name");
 
@@ -129,7 +134,7 @@ export const getOrdersController = async (req, res) => {
 export const AllOrdersController = async (req, res) => {
   try {
     const orders = await orderModel
-      .find({})
+      .find({ status: { $nin: PENDING_CHECKOUT_STATUSES } })
       .populate("bikes", "-photo")
       .populate("renter", "name")
       .sort({ createdAt: -1 });
@@ -161,10 +166,17 @@ export const updateStatusController = async (req, res) => {
       });
     }
 
+    if (!RENTAL_STATUSES.includes(status)) {
+      return res.status(400).send({
+        success: false,
+        message: `Invalid rental status. Allowed values: ${RENTAL_STATUSES.join(", ")}`,
+      });
+    }
+
     const updatedOrder = await orderModel.findByIdAndUpdate(
       orderId,
       { status },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     if (!updatedOrder) {
@@ -234,7 +246,8 @@ export const razorpaySuccessController = async (req, res) => {
     }
 
     // Mark as confirmed booking in Processing state (awaiting pickup)
-    existingOrder.status = "Processing";
+    // Mark as confirmed booking in "In Process" state (awaiting proof check & vehicle pickup)
+    existingOrder.status = "Booked (Pending Approval)";
     existingOrder.paymentId = paymentId;
     const updatedOrder = await existingOrder.save();
 

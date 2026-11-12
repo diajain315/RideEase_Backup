@@ -1,79 +1,3 @@
-// import mongoose from "mongoose";
-
-// const userSchema = new mongoose.Schema(
-//   {
-//     otp: {
-//       code: { type: String },
-//       expiry: { type: Date }
-//     },
-    
-//     name: {
-//       type: String,
-//       required: true,
-//     },
-//     email: {
-//       type: String,
-//       required: true,
-//       unique: true,
-//     },
-//     password: {
-//       type: String,
-//       required: true,
-//     },
-    
-//     role: {
-//       type: Number,
-//       default: 0,
-//     },
-//     phone: {
-//       type: String,
-//       required: true,
-//       match: /^[6-9]\d{9}$/, // Ensure it's a valid Indian phone number
-//     },
-//     gender: {
-//       type: String,
-//       enum: ['male', 'female', 'other'],
-//       required: true,
-//     },
-//   },
-//   { timestamps: true }
-// );
-// export default mongoose.model("Users", userSchema);
-
-// import mongoose from "mongoose";
-
-
-// const userSchema = new mongoose.Schema(
-//   {
-//     otp: {
-//             code: { type: String },
-//             expiry: { type: Date }
-//           },
-//     name: {
-//       type: String,
-//       required: true,
-//     },
-//     email: {
-//       type: String,
-//       required: true,
-//       unique: true,
-//     },
-//     password: {
-//       type: String,
-//       required: true,
-//     },
-//     role: {
-//       type: Number,
-//       default: 0, // 0: User, 1: Admin
-//     },
-    
-    
-//   },
-//   { timestamps: true }
-// );
-
-// export default mongoose.model("Users", userSchema); 43-75
-
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
@@ -95,18 +19,38 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: function () {
+        return this.authProvider !== "google";
+      },
     },
     phone: {
       type: String,
-      required: true, 
+      required: function () {
+        return this.authProvider !== "google";
+      },
+      default: "",
     },
     gender: {
       type: String,
-      required: true,
-      enum: ["male", "female", "other"], // Restrict to only these values
+      required: function () {
+        return this.authProvider !== "google";
+      },
+      enum: ["male", "female", "other"],
+      default: "other",
     },
-    
+    googleId: {
+      type: String,
+      default: "",
+    },
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
+    },
+    avatar: {
+      type: String,
+      default: "",
+    },
     role: {
       type: Number,
       default: 0, // 0: User, 1: Admin
@@ -116,10 +60,8 @@ const userSchema = new mongoose.Schema(
       required: false, // Optional field, can be added later
     },
     licenseFile: {
-      
-        data: Buffer,
-        contentType: String,
-     
+      data: Buffer,
+      contentType: String,
     },
   },
   { timestamps: true }

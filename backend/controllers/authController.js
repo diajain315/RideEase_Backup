@@ -643,11 +643,12 @@ import { SERVER_INSTANCE_ID } from "../config/serverInstance.js";
 
 import { comparePassword, hashPassword } from "../helpers/authHelper.js";
 import userModel from "../models/userModel.js";
-import orderModel from "../models/orderModel.js";
+import orderModel, { COMPLETED_OR_ACTIVE_RENTAL_STATUSES } from "../models/orderModel.js";
 import JWT from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import fs from "fs";
 import { verifyDrivingLicenseDocument } from "../helpers/licenseVerificationHelper.js";
+import { OAuth2Client } from "google-auth-library";
 
 // ✅ Utility to generate 6-digit OTP
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -717,7 +718,16 @@ export const loginController = async (req, res) => {
     email = email.trim().toLowerCase();
 
     const user = await userModel.findOne({ email });
-    if (!user || !(await comparePassword(password, user.password))) {
+    if (!user) {
+      return res.status(401).send({ success: false, message: "Invalid credentials" });
+    }
+    if (!user.password) {
+      return res.status(400).send({
+        success: false,
+        message: "This account uses Google Sign-In. Please click 'Continue with Google' to log in.",
+      });
+    }
+    if (!(await comparePassword(password, user.password))) {
       return res.status(401).send({ success: false, message: "Invalid credentials" });
     }
 
@@ -730,12 +740,129 @@ export const loginController = async (req, res) => {
     res.status(200).send({
       success: true,
       message: "Login successful",
-      user: { name: user.name, email: user.email, _id: user._id, role: user.role, gender: user.gender, phone: user.phone },
+      user: { name: user.name, email: user.email, _id: user._id, role: user.role, gender: user.gender, phone: user.phone, avatar: user.avatar, licenseNumber: user.licenseNumber, authProvider: user.authProvider },
       token,
       serverInstanceId: SERVER_INSTANCE_ID,
     });
   } catch (error) {
     res.status(500).send({ success: false, message: "Login failed", error: error.message });
+  }
+};
+
+// ✅ GOOGLE LOGIN / SIGNUP Controller
+export const googleLoginController = async (req, res) => {
+  try {
+    const { credential, accessToken } = req.body;
+
+    if (!credential && !accessToken) {
+      return res.status(400).send({
+        success: false,
+        message: "Google credential or access token is required",
+      });
+    }
+
+    let googleUser = null;
+
+    if (credential) {
+      if (!process.env.GOOGLE_CLIENT_ID) {
+        return res.status(500).send({
+          success: false,
+          message: "Google OAuth is not configured on the server (GOOGLE_CLIENT_ID missing)",
+        });
+      }
+      const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+      const ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      if (!payload || !payload.email) {
+        return res.status(401).send({ success: false, message: "Invalid Google ID token" });
+      }
+      googleUser = {
+        googleId: payload.sub,
+        email: payload.email.trim().toLowerCase(),
+        name: payload.name || payload.email.split("@")[0],
+        avatar: payload.picture || "",
+      };
+    } else if (accessToken) {
+      const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!response.ok) {
+        return res.status(401).send({
+          success: false,
+          message: "Invalid or expired Google access token",
+        });
+      }
+      const payload = await response.json();
+      if (!payload || !payload.email) {
+        return res.status(401).send({ success: false, message: "Unable to retrieve Google profile email" });
+      }
+      googleUser = {
+        googleId: payload.sub,
+        email: payload.email.trim().toLowerCase(),
+        name: payload.name || payload.email.split("@")[0],
+        avatar: payload.picture || "",
+      };
+    }
+
+    let user = await userModel.findOne({ email: googleUser.email });
+
+    if (user) {
+      let updated = false;
+      if (!user.googleId) {
+        user.googleId = googleUser.googleId;
+        updated = true;
+      }
+      if (!user.avatar && googleUser.avatar) {
+        user.avatar = googleUser.avatar;
+        updated = true;
+      }
+      if (updated) {
+        await user.save();
+      }
+    } else {
+      user = await new userModel({
+        name: googleUser.name,
+        email: googleUser.email,
+        googleId: googleUser.googleId,
+        authProvider: "google",
+        avatar: googleUser.avatar,
+        phone: "",
+        gender: "other",
+      }).save();
+    }
+
+    const token = JWT.sign(
+      { _id: user._id, name: user.name, role: user.role, serverInstanceId: SERVER_INSTANCE_ID },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.status(200).send({
+      success: true,
+      message: "Google login successful",
+      user: {
+        name: user.name,
+        email: user.email,
+        _id: user._id,
+        role: user.role,
+        gender: user.gender,
+        phone: user.phone,
+        avatar: user.avatar,
+        licenseNumber: user.licenseNumber,
+        authProvider: user.authProvider,
+      },
+      token,
+      serverInstanceId: SERVER_INSTANCE_ID,
+    });
+  } catch (error) {
+    res.status(401).send({
+      success: false,
+      message: "Google authentication failed",
+      error: error.message,
+    });
   }
 };
 
@@ -871,7 +998,7 @@ export const AllUsersController = async (req, res) => {
     try {
       const orders = await orderModel.find(
         {
-          status: { $in: ["Processing", "Shipped", "Delivered"] },
+          status: { $in: COMPLETED_OR_ACTIVE_RENTAL_STATUSES },
         },
         "renter"
       );
@@ -912,7 +1039,10 @@ export const userProfileController = async (req, res) => {
         _id: user._id,
         gender: user.gender,
         phone: user.phone,
-        role: user.role
+        role: user.role,
+        avatar: user.avatar,
+        licenseNumber: user.licenseNumber,
+        authProvider: user.authProvider
       },
       message: "User info fetched successfully",
     });
