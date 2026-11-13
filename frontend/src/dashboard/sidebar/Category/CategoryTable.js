@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Table, Space, Button, Image, Popconfirm, message } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { CategoryAll, deleteCategory } from "../../../redux/features/Category/categoryAction";
@@ -9,6 +9,10 @@ const CategoryTable = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const base_url = process.env.REACT_APP_API_URL || "http://localhost:5001";
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 8,
+  });
 
   useEffect(() => {
     dispatch(CategoryAll());
@@ -111,7 +115,19 @@ const CategoryTable = () => {
         dataSource={categories}
         rowKey="_id"
         loading={loading}
-        pagination={{ pageSize: 8, showSizeChanger: true }}
+        pagination={{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          showSizeChanger: true,
+          pageSizeOptions: ["8", "15", "20", "50"],
+          showTotal: (total, range) => `Showing ${range[0]}-${range[1]} of ${total} categories`,
+        }}
+        onChange={(newPagination) => {
+          setPagination({
+            current: newPagination.current,
+            pageSize: newPagination.pageSize,
+          });
+        }}
         locale={{
           emptyText: <div className="py-8 text-slate-400 text-xs">No categories created yet</div>,
         }}

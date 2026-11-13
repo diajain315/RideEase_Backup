@@ -21,6 +21,10 @@ const UserTable = ({ searchText = "" }) => {
   const navigate = useNavigate();
 
   const [loadingDocId, setLoadingDocId] = useState(null);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+  });
 
   useEffect(() => {
     dispatch(userAll());
@@ -255,9 +259,17 @@ const UserTable = ({ searchText = "" }) => {
           dataSource={dataSource}
           loading={loading}
           pagination={{
-            pageSize: 10,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
             showSizeChanger: true,
+            pageSizeOptions: ["10", "15", "20", "50", "100"],
             showTotal: (total, range) => `Showing ${range[0]}-${range[1]} of ${total} users`,
+          }}
+          onChange={(newPagination) => {
+            setPagination({
+              current: newPagination.current,
+              pageSize: newPagination.pageSize,
+            });
           }}
           locale={{
             emptyText: <div className="py-8 text-slate-400 text-xs">No users found</div>,

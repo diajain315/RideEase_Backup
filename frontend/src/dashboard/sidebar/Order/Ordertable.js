@@ -21,6 +21,10 @@ const Ordertable = () => {
   const navigate = useNavigate();
   const [localOrders, setLocalOrders] = useState([]);
   const [loadingDocId, setLoadingDocId] = useState(null);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+  });
   const { loading, error } = useSelector((state) => state.order);
 
   // Handle viewing a specific user's license document
@@ -85,12 +89,17 @@ const Ordertable = () => {
       "Rented User",
       "Driver License",
       "Total Amount",
+      "Booking Date",
       "Start Date",
       "End Date",
       "Status"
     ];
 
     const rows = localOrders.map((order, index) => {
+      const formattedBookingDate =
+        order?.createdAt && moment(order.createdAt).isValid()
+          ? moment(order.createdAt).format("DD/MM/YYYY hh:mm A")
+          : "";
       const formattedStartDate =
         order?.startDate && moment(order.startDate).isValid()
           ? moment(order.startDate).format("DD/MM/YYYY")
@@ -101,6 +110,7 @@ const Ordertable = () => {
           : (order?.endDate || "");
 
       // Force Excel text evaluation so narrow columns never trigger the Date '########' overflow
+      const bookingDate = formattedBookingDate ? `="${formattedBookingDate}"` : "";
       const startDate = formattedStartDate ? `="${formattedStartDate}"` : "";
       const endDate = formattedEndDate ? `="${formattedEndDate}"` : "";
 
@@ -111,6 +121,7 @@ const Ordertable = () => {
         order?.renter?.name || "N/A",
         order?.renter ? (order?.renter?.hasLicense ? "Verified" : "Not Uploaded") : "N/A",
         order?.totalAmt || "",
+        bookingDate,
         startDate,
         endDate,
         normalizeRentalStatus(order?.status)
@@ -213,6 +224,25 @@ const Ordertable = () => {
       ),
     },
     {
+      title: "Booking Date",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      render: (createdAt) => (
+        createdAt ? (
+          <div className="text-xs text-slate-600">
+            <div className="font-medium text-slate-800">
+              {moment(createdAt).format("DD MMM YYYY, hh:mm A")}
+            </div>
+            <div className="text-[10px] text-slate-400">
+              {moment(createdAt).fromNow()}
+            </div>
+          </div>
+        ) : (
+          <span className="text-xs text-slate-400">—</span>
+        )
+      ),
+    },
+    {
       title: "Start Date",
       dataIndex: "startDate",
       key: "startDate",
@@ -290,7 +320,19 @@ const Ordertable = () => {
                 dataSource={Array.isArray(localOrders) ? localOrders : []}
                 columns={columns}
                 rowKey="_id"
-                pagination={{ pageSize: 10, showSizeChanger: true }}
+                pagination={{
+                  current: pagination.current,
+                  pageSize: pagination.pageSize,
+                  showSizeChanger: true,
+                  pageSizeOptions: ["10", "15", "20", "50", "100"],
+                  showTotal: (total, range) => `Showing ${range[0]}-${range[1]} of ${total} orders`,
+                }}
+                onChange={(newPagination) => {
+                  setPagination({
+                    current: newPagination.current,
+                    pageSize: newPagination.pageSize,
+                  });
+                }}
                 locale={{
                   emptyText: <div className="py-8 text-slate-400 text-xs">No rental bookings found</div>,
                 }}

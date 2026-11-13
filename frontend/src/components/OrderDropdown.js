@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { GetOrder } from "../redux/features/Order/orderAction";
 import { Table, Tag } from "antd";
@@ -12,6 +12,10 @@ import { RENTAL_STATUS_COLORS, normalizeRentalStatus } from "../common/rentalSta
 const OrderDropdown = () => {
   const dispatch = useDispatch();
   const { userOrders, loading } = useSelector((state) => state.order);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 8,
+  });
 
   useEffect(() => {
     dispatch(GetOrder());
@@ -130,7 +134,19 @@ const OrderDropdown = () => {
                   columns={columns}
                   rowKey="_id"
                   loading={loading}
-                  pagination={{ pageSize: 8, showSizeChanger: true }}
+                  pagination={{
+                    current: pagination.current,
+                    pageSize: pagination.pageSize,
+                    showSizeChanger: true,
+                    pageSizeOptions: ["8", "15", "20", "50"],
+                    showTotal: (total, range) => `Showing ${range[0]}-${range[1]} of ${total} bookings`,
+                  }}
+                  onChange={(newPagination) => {
+                    setPagination({
+                      current: newPagination.current,
+                      pageSize: newPagination.pageSize,
+                    });
+                  }}
                 />
               </div>
             ) : (

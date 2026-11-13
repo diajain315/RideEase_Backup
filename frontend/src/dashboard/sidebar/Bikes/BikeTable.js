@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Table, Tag, Space, Button, Image, Popconfirm, message } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { BikeAll, deleteBike } from "../../../redux/features/Bikes/bikeAction";
@@ -9,6 +9,10 @@ const BikeTable = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const base_url = process.env.REACT_APP_API_URL || "http://localhost:5001";
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 8,
+  });
 
   useEffect(() => {
     dispatch(BikeAll());
@@ -153,7 +157,19 @@ const BikeTable = () => {
         dataSource={bikes}
         rowKey="_id"
         loading={loading}
-        pagination={{ pageSize: 8, showSizeChanger: true }}
+        pagination={{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          showSizeChanger: true,
+          pageSizeOptions: ["8", "15", "20", "50"],
+          showTotal: (total, range) => `Showing ${range[0]}-${range[1]} of ${total} vehicles`,
+        }}
+        onChange={(newPagination) => {
+          setPagination({
+            current: newPagination.current,
+            pageSize: newPagination.pageSize,
+          });
+        }}
         locale={{
           emptyText: <div className="py-8 text-slate-400 text-xs">No vehicles in fleet catalog</div>,
         }}

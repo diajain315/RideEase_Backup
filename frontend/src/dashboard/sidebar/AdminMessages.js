@@ -23,6 +23,10 @@ const AdminMessages = () => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+  });
   
   // Single Modal State for total reliability
   const [modalState, setModalState] = useState({
@@ -396,7 +400,19 @@ const AdminMessages = () => {
             dataSource={filteredMessages}
             rowKey="_id"
             loading={loading}
-            pagination={{ pageSize: 10, showSizeChanger: false }}
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              showSizeChanger: true,
+              pageSizeOptions: ["10", "15", "20", "50", "100"],
+              showTotal: (total, range) => `Showing ${range[0]}-${range[1]} of ${total} inquiries`,
+            }}
+            onChange={(newPagination) => {
+              setPagination({
+                current: newPagination.current,
+                pageSize: newPagination.pageSize,
+              });
+            }}
             locale={{
               emptyText: (
                 <div className="py-12 text-center">
