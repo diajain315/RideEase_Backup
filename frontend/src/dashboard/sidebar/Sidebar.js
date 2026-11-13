@@ -7,7 +7,6 @@ import {
   CarOutlined,
   ShoppingCartOutlined,
   DownloadOutlined,
-  EnvironmentOutlined,
   MailOutlined,
 } from "@ant-design/icons";
 import { Link, useLocation } from "react-router-dom";
@@ -120,21 +119,6 @@ export default function Sidebar() {
               className="text-slate-300 hover:text-white"
             >
               Download Reports
-            </a>
-          </Menu.Item>
-
-          <Menu.Item
-            key="/gpstracking"
-            icon={<EnvironmentOutlined className="text-slate-400" />}
-            className="my-1 mx-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/80"
-          >
-            <a
-              href="https://mvts11.millitrack.com/modern/#/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-slate-300 hover:text-white"
-            >
-              GPS Fleet Tracker
             </a>
           </Menu.Item>
         </Menu>
