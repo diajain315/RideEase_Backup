@@ -1039,6 +1039,7 @@ export const AllUsersController = async (req, res) => {
     const usersWithStats = allUsers.map((u) => {
       const uObj = u.toObject();
       uObj.ordersCount = orderCountMap[u._id.toString()] || 0;
+      uObj.hasLicense = Boolean((u.licenseFile && u.licenseFile.data) || u.licenseNumber);
       return uObj;
     });
 

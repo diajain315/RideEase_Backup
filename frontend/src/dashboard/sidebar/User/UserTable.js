@@ -1,8 +1,9 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Table, Tag, Tooltip, Button, Space, Popconfirm, message } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { userAll, deleteUserById } from "../../../redux/features/User/authAction";
+import Http from "../../../Helper/Http";
 import {
   UserOutlined,
   ReloadOutlined,
@@ -11,6 +12,7 @@ import {
   CheckCircleOutlined,
   EditOutlined,
   DeleteOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import moment from "moment";
 
@@ -18,11 +20,32 @@ const UserTable = ({ searchText = "" }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  const [loadingDocId, setLoadingDocId] = useState(null);
+
   useEffect(() => {
     dispatch(userAll());
   }, [dispatch]);
 
   const { users, loading, userInfo } = useSelector((state) => state.auth);
+
+  // Handle viewing a specific user's license document
+  const handleShowLicense = async (userId) => {
+    if (!userId) return;
+    try {
+      setLoadingDocId(userId);
+      const res = await Http.get(`/api/v1/auth/user-license/${userId}`, {
+        responseType: "blob",
+      });
+      const contentType = res.headers["content-type"] || "application/pdf";
+      const blob = new Blob([res.data], { type: contentType });
+      const docUrl = window.URL.createObjectURL(blob);
+      window.open(docUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      message.error(err.response?.data?.message || "No license document found for this user.");
+    } finally {
+      setLoadingDocId(null);
+    }
+  };
 
   // Handle user deletion with confirmation
   const handleDelete = async (userId) => {
@@ -103,29 +126,25 @@ const UserTable = ({ searchText = "" }) => {
     },
     {
       title: "Driver License",
-      dataIndex: "licenseNumber",
-      key: "licenseNumber",
+      key: "license",
       align: "center",
-      render: (license, record) => {
-        if (license) {
+      render: (_, record) => {
+        const hasLicense = record.hasLicense || Boolean(record.licenseNumber);
+        if (hasLicense) {
           return (
-            <span className="text-xs font-mono font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center gap-1.5">
-              <CheckCircleOutlined className="text-emerald-600" />
-              {license}
-            </span>
-          );
-        }
-        if (record.ordersCount > 0) {
-          return (
-            <Tooltip title="Rented before strict AI verification was activated. System will enforce license upload before next rental.">
-              <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 inline-block cursor-help">
-                Missing (Action Required)
-              </span>
-            </Tooltip>
+            <Button
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => handleShowLicense(record._id)}
+              loading={loadingDocId === record._id}
+              className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-300 rounded-lg text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
+            >
+              Show
+            </Button>
           );
         }
         return (
-          <span className="text-xs text-slate-400">Not Uploaded</span>
+          <span className="text-xs text-slate-400 font-medium">Not Uploaded</span>
         );
       },
     },
@@ -160,7 +179,7 @@ const UserTable = ({ searchText = "" }) => {
               size="small"
               icon={<EditOutlined />}
               onClick={() => navigate(`/admin/users/edit/${record._id}`)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs cursor-pointer"
             >
               Edit
             </Button>
@@ -171,7 +190,7 @@ const UserTable = ({ searchText = "" }) => {
                   size="small"
                   icon={<DeleteOutlined />}
                   disabled
-                  className="rounded-lg text-xs"
+                  className="rounded-lg text-xs opacity-50"
                 >
                   Delete
                 </Button>
@@ -189,7 +208,7 @@ const UserTable = ({ searchText = "" }) => {
                   danger
                   size="small"
                   icon={<DeleteOutlined />}
-                  className="rounded-lg text-xs"
+                  className="rounded-lg text-xs cursor-pointer"
                 >
                   Delete
                 </Button>
@@ -209,7 +228,7 @@ const UserTable = ({ searchText = "" }) => {
     role: user.role,
     gender: user.gender,
     phone: user.phone,
-    licenseNumber: user.licenseNumber,
+    hasLicense: Boolean(user.hasLicense || (user.licenseFile && user.licenseFile.data) || user.licenseNumber),
     ordersCount: user.ordersCount || 0,
     createdAt: user.createdAt,
   }));
