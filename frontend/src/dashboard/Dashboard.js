@@ -4,6 +4,7 @@ import Sidebar from "./sidebar/Sidebar";
 import Dashboardnavbar from "./navbar/Dashboardnavbar";
 import Headerstats from "./components/Headerstats";
 import User from "./sidebar/User/User";
+import EditUser from "./sidebar/User/EditUser";
 import Bike from "./sidebar/Bikes/Bike";
 import AddBike from "./sidebar/Bikes/AddBike";
 import EditBike from "./sidebar/Bikes/EditBike";
@@ -30,6 +31,7 @@ const Dashboard = () => {
             <Route path="" element={<Headerstats />} />
             <Route path="/" element={<Headerstats />} />
             <Route path="users" element={<User />} />
+            <Route path="users/edit/:id" element={<EditUser />} />
             <Route path="bikes" element={<Bike />} />
             <Route path="bikes/add" element={<AddBike />} />
             <Route path="bikes/edit/:id" element={<EditBike />} />

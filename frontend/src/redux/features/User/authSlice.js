@@ -7,6 +7,7 @@ import {
   LoggedInUser,
   editUserById,
   getUserById,
+  deleteUserById,
   forgotPassword,
   sendOtp,
   addLicense,
@@ -311,6 +312,23 @@ const authSlice = createSlice({
       state.success = true;
     },
     [editUserById.rejected]: (state, { payload }) => {
+      state.loading = false;
+      state.error = payload;
+    },
+
+    // delete user
+    [deleteUserById.pending]: (state) => {
+      state.loading = true;
+      state.error = null;
+    },
+    [deleteUserById.fulfilled]: (state, { payload }) => {
+      state.loading = false;
+      state.success = true;
+      if (state.users) {
+        state.users = state.users.filter((u) => u._id !== payload?.id);
+      }
+    },
+    [deleteUserById.rejected]: (state, { payload }) => {
       state.loading = false;
       state.error = payload;
     },

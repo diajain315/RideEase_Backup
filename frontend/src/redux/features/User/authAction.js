@@ -142,8 +142,25 @@ export const getUserById = createAsyncThunk(
   "user/id",
   async (id, { rejectWithValue }) => {
     try {
-      const data = await Http.get(`/user/userById/${id}`);
-      return data.data;
+      const data = await Http.get(`/api/v1/auth/user/${id}`);
+      return data.data?.user || data.data;
+    } catch (error) {
+      if (error.response && error.response.data.message) {
+        return rejectWithValue(error.response.data.message);
+      } else {
+        return rejectWithValue(error.message);
+      }
+    }
+  }
+);
+
+// ✅ Delete User by ID (Admin)
+export const deleteUserById = createAsyncThunk(
+  "user/delete",
+  async (id, { rejectWithValue }) => {
+    try {
+      const data = await Http.delete(`/api/v1/auth/delete-user/${id}`);
+      return { id, message: data.data?.message };
     } catch (error) {
       if (error.response && error.response.data.message) {
         return rejectWithValue(error.response.data.message);

@@ -1,270 +1,520 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { Formik, ErrorMessage } from "formik";
+import * as Yup from "yup";
 import {
-  editUserById,
-  getUserById,
-} from "../../../redux/features/User/authActions";
-import { clearFields } from "../../../redux/features/User/authSlice";
-import { ValidateEditUser } from "../../Common/Validation";
-import Spinner from "../../Helper/Spinner";
-import { useParams } from "react-router-dom";
-import AddEditWrapper from "../../common/AddEditWrapper";
-const base_url = "http://localhost:5001";
+  ArrowLeftOutlined,
+  UserOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  SaveOutlined,
+  CheckCircleOutlined,
+  EyeOutlined,
+  DeleteOutlined,
+  LoadingOutlined,
+  IdcardOutlined,
+} from "@ant-design/icons";
+import { Popconfirm, message, Tag } from "antd";
+import { editUserById, getUserById, deleteUserById, userAll } from "../../../redux/features/User/authAction";
+import Http from "../../../Helper/Http";
+import Layout from "../../../components/Layout";
+import Loading from "../../../components/Loading";
 
-function EditUser() {
-  let { id } = useParams();
+const ValidateAdminEditUser = Yup.object().shape({
+  name: Yup.string()
+    .matches(
+      /^[a-zA-Z\s.]+$/,
+      "Name can only contain alphabetical characters, spaces, and periods."
+    )
+    .min(3, "Name must be at least 3 characters long.")
+    .max(50, "Name cannot be longer than 50 characters.")
+    .required("Name is required"),
+  email: Yup.string()
+    .email("Enter a valid email address")
+    .required("Email is required"),
+  phone: Yup.string()
+    .matches(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number")
+    .required("Phone number is required"),
+  gender: Yup.string()
+    .oneOf(["male", "female", "other"], "Select a valid gender")
+    .required("Gender is required"),
+  role: Yup.number()
+    .oneOf([0, 1], "Select a valid role")
+    .required("Role is required"),
+});
+
+const EditUser = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
-
-  const onImageChange = (event, setFieldValue) => {
-    setFieldValue("image", event.target.files[0]);
-    setSelectedImage(URL.createObjectURL(event.target.files[0]));
-  };
-
   const dispatch = useDispatch();
-  const { loading, error, success, userById } = useSelector(
-    (state) => state.auth
-  );
 
+  const { userInfo } = useSelector((state) => state.auth);
+
+  const [userData, setUserData] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [viewingDoc, setViewingDoc] = useState(false);
+  const [serverError, setServerError] = useState("");
+
+  // Fetch target user details
   useEffect(() => {
-    dispatch(getUserById(id));
+    let isMounted = true;
+    const fetchUser = async () => {
+      try {
+        setLoadingUser(true);
+        const res = await Http.get(`/api/v1/auth/user/${id}`);
+        if (isMounted) {
+          const user = res.data?.user || res.data;
+          setUserData(user);
+        }
+      } catch (err) {
+        if (isMounted) {
+          const msg = err.response?.data?.message || "Could not load user data.";
+          setServerError(msg);
+          message.error(msg);
+        }
+      } finally {
+        if (isMounted) setLoadingUser(false);
+      }
+    };
+
+    if (id) {
+      fetchUser();
+    }
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
-  const handleBack = async () => {
-    await dispatch(clearFields());
-    navigate(-1);
+  // Handle viewing license document in a new tab
+  const handleViewLicense = async () => {
+    if (!id) return;
+    try {
+      setViewingDoc(true);
+      const res = await Http.get(`/api/v1/auth/user-license/${id}`, {
+        responseType: "blob",
+      });
+      const contentType = res.headers["content-type"] || "application/pdf";
+      const blob = new Blob([res.data], { type: contentType });
+      const docUrl = window.URL.createObjectURL(blob);
+      window.open(docUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      message.error(err.response?.data?.message || "No license document found for this user.");
+    } finally {
+      setViewingDoc(false);
+    }
   };
 
-  useEffect(() => {
-    if (success) {
-      navigate(-1);
-    }
-  }, [success]);
-  const [selectedImage, setSelectedImage] = useState();
-  return (
-    <>
-      {userById ? (
-        <AddEditWrapper
-          title='User'
-          error={error}
-          method='update'
-          success={success}
-          backlink='/admin/user'
-          handleBack={handleBack}
-        >
-          <Formik
-            initialValues={{
-              name: userById ? userById.name : "",
-              email: userById ? userById.email : "",
-              contact: userById ? userById.contact : "",
-              gender: userById ? userById.gender : "",
-              role: userById ? userById.role : "",
-            }}
-            validationSchema={ValidateEditUser}
-            onSubmit={async (values, actions) => {
-              let formdata = new FormData();
-              formdata.append("name", values.name);
-              formdata.append("contact", values.contact);
-              formdata.append("gender", values.gender);
-              formdata.append("image", values.image);
-              formdata.append("email", values.email);
-              formdata.append("role", values.role);
+  // Handle form submission
+  const handleSubmit = async (values, actions) => {
+    try {
+      setServerError("");
+      const updateData = {
+        name: values.name.trim(),
+        email: values.email.trim().toLowerCase(),
+        phone: values.phone.trim(),
+        gender: values.gender,
+        role: Number(values.role),
+      };
 
-              let data = {
-                id: id,
-                formdata: formdata,
-              };
-              await dispatch(editUserById(data));
-              await dispatch(clearFields());
+      const result = await dispatch(
+        editUserById({
+          id: id,
+          formdata: updateData,
+        })
+      );
+
+      if (result.error) {
+        const errorMsg = result.payload || "Failed to update user.";
+        setServerError(errorMsg);
+        message.error(errorMsg);
+        return;
+      }
+
+      message.success("User profile updated successfully!");
+      dispatch(userAll());
+      navigate("/admin/users");
+    } catch (error) {
+      const msg = error?.message || "Update failed. Please try again.";
+      setServerError(msg);
+      message.error(msg);
+    } finally {
+      actions.setSubmitting(false);
+    }
+  };
+
+  // Handle delete user
+  const handleDelete = async () => {
+    try {
+      const res = await dispatch(deleteUserById(id));
+      if (!res.error) {
+        message.success("User deleted successfully from database!");
+        dispatch(userAll());
+        navigate("/admin/users");
+      } else {
+        message.error(res.payload || "Failed to delete user.");
+      }
+    } catch (e) {
+      message.error("Failed to delete user.");
+    }
+  };
+
+  if (loadingUser) {
+    return (
+      <Layout title="Dashboard : Loading User Details">
+        <div className="flex justify-center items-center min-h-[calc(100vh-64px)] bg-slate-50">
+          <Loading fullScreen={false} message="Loading user account details..." />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <Layout title="Dashboard : User Not Found">
+        <div className="p-6 bg-slate-50 min-h-[calc(100vh-64px)] flex flex-col items-center justify-center">
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center max-w-md">
+            <h2 className="text-lg font-bold text-slate-800 mb-2">User Not Found</h2>
+            <p className="text-xs text-slate-500 mb-4">
+              {serverError || "The requested user account does not exist or has already been deleted."}
+            </p>
+            <button
+              onClick={() => navigate("/admin/users")}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold"
+            >
+              ← Back to Users Directory
+            </button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  const isSelf = userInfo?._id && String(userInfo._id) === String(id);
+
+  return (
+    <Layout title={`Dashboard : Edit ${userData.name || "User"}`}>
+      <div className="p-6 bg-slate-50 min-h-[calc(100vh-64px)]">
+        {/* Top Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            onClick={() => navigate("/admin/users")}
+            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 transition-colors shadow-sm cursor-pointer"
+            title="Back to User Directory"
+          >
+            <ArrowLeftOutlined />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <UserOutlined className="text-emerald-600" />
+              Edit User Profile
+            </h1>
+            <p className="text-xs text-slate-500">
+              Admin control over user account credentials, permissions, and status
+            </p>
+          </div>
+        </div>
+
+        {/* Center Edit Card Styled like My Profile */}
+        <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-200/80 p-8 sm:p-10">
+          {/* Header Avatar and Name */}
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-16 h-16 rounded-full bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center text-emerald-600 text-2xl font-bold shadow-sm mb-3">
+              {userData.name ? userData.name.charAt(0).toUpperCase() : "U"}
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+              {userData.name}
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5 font-mono">{userData.email}</p>
+            <div className="mt-2">
+              <Tag color={userData.role === 1 ? "emerald" : "blue"} className="rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider">
+                {userData.role === 1 ? "Administrator" : "Customer"}
+              </Tag>
+            </div>
+          </div>
+
+          {serverError && (
+            <div className="mb-5 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-medium">
+              {serverError}
+            </div>
+          )}
+
+          <Formik
+            enableReinitialize={true}
+            initialValues={{
+              name: userData.name || "",
+              email: userData.email || "",
+              phone: userData.phone || "",
+              gender: userData.gender || "male",
+              role: typeof userData.role === "number" ? userData.role : 0,
             }}
+            validationSchema={ValidateAdminEditUser}
+            onSubmit={handleSubmit}
           >
             {(props) => (
-              <form onSubmit={props.handleSubmit}>
-                <h6 className='mt-3 mb-6 text-sm font-bold uppercase text-blueGray-400'>
-                  User Information
-                </h6>
-                <div className='flex flex-wrap'>
-                  <div className='w-full px-3 py-3 lg:w-6/12'>
-                    <div className='relative w-full mb-3'>
-                      <label
-                        className='block mb-2 text-xs font-bold uppercase text-blueGray-600'
-                        htmlFor='grid-password'
-                      >
-                        Username
-                      </label>
-                      <input
-                        type='text'
-                        className='w-full px-3 py-3 text-sm transition-all duration-150 ease-linear bg-white border-0 rounded shadow placeholder-blueGray-300 text-blueGray-600 focus:outline-none focus:ring'
-                        name='name'
-                        onChange={props.handleChange}
-                        onBlur={props.handleBlur}
-                        value={props.values.name || ""}
-                      />
-                    </div>
-                    <span className='text-red-500 error'>
-                      <ErrorMessage name='name' />
-                    </span>
+              <form onSubmit={props.handleSubmit} className="space-y-5">
+                {/* Full Name */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                    Full Name *
+                  </label>
+                  <div className="relative">
+                    <UserOutlined className="absolute left-3.5 top-3.5 text-slate-400 text-sm" />
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      onChange={props.handleChange}
+                      onBlur={props.handleBlur}
+                      value={props.values.name}
+                      className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800 transition-all font-medium"
+                      placeholder="User's Full Name"
+                      required
+                    />
                   </div>
-                  <div className='w-full px-3 py-3 lg:w-6/12'>
-                    <div className='relative w-full mb-3'>
-                      <label
-                        className='block mb-2 text-xs font-bold uppercase text-blueGray-600'
-                        htmlFor='grid-password'
-                      >
-                        Email address
-                      </label>
-                      <input
-                        type='email'
-                        className='w-full px-3 py-3 text-sm transition-all duration-150 ease-linear bg-white border-0 rounded shadow placeholder-blueGray-300 text-blueGray-600 focus:outline-none focus:ring'
-                        name='email'
-                        onChange={props.handleChange}
-                        onBlur={props.handleBlur}
-                        value={props.values.email || ""}
-                      />
-                    </div>
-                    <span className='text-red-500 error'>
-                      <ErrorMessage name='email' />
-                    </span>
+                  <span className="text-red-500 text-xs mt-1 block">
+                    <ErrorMessage name="name" />
+                  </span>
+                </div>
+
+                {/* Email Address */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                    Email Address *
+                  </label>
+                  <div className="relative">
+                    <MailOutlined className="absolute left-3.5 top-3.5 text-slate-400 text-sm" />
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      onChange={props.handleChange}
+                      onBlur={props.handleBlur}
+                      value={props.values.email}
+                      className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800 transition-all font-medium"
+                      placeholder="user@example.com"
+                      required
+                    />
                   </div>
-                  <div className='w-full px-3 py-3 lg:w-6/12'>
-                    <div className='relative w-full mb-3'>
+                  <span className="text-red-500 text-xs mt-1 block">
+                    <ErrorMessage name="email" />
+                  </span>
+                </div>
+
+                {/* Phone Number */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                    Phone Number *
+                  </label>
+                  <div className="relative">
+                    <PhoneOutlined className="absolute left-3.5 top-3.5 text-slate-400 text-sm" />
+                    <input
+                      id="phone"
+                      name="phone"
+                      type="text"
+                      onChange={props.handleChange}
+                      onBlur={props.handleBlur}
+                      value={props.values.phone}
+                      className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800 transition-all font-medium"
+                      placeholder="10-digit mobile number"
+                      required
+                    />
+                  </div>
+                  <span className="text-red-500 text-xs mt-1 block">
+                    <ErrorMessage name="phone" />
+                  </span>
+                </div>
+
+                {/* Gender Radio Buttons */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">
+                    Gender *
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {["male", "female", "other"].map((g) => (
                       <label
-                        className='block mb-2 text-xs font-bold uppercase text-blueGray-600'
-                        htmlFor='grid-password'
+                        key={g}
+                        className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-semibold capitalize cursor-pointer transition-all ${
+                          props.values.gender === g
+                            ? "border-emerald-500 bg-emerald-50/60 text-emerald-800 ring-1 ring-emerald-500"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        }`}
                       >
-                        Contact Number
+                        <input
+                          type="radio"
+                          name="gender"
+                          value={g}
+                          onChange={props.handleChange}
+                          onBlur={props.handleBlur}
+                          checked={props.values.gender === g}
+                          className="accent-emerald-600"
+                        />
+                        {g}
                       </label>
+                    ))}
+                  </div>
+                  <span className="text-red-500 text-xs mt-1 block">
+                    <ErrorMessage name="gender" />
+                  </span>
+                </div>
+
+                {/* User Role (Customer vs Admin) */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">
+                    Account Role *
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label
+                      className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
+                        Number(props.values.role) === 0
+                          ? "border-blue-500 bg-blue-50/60 text-blue-800 ring-1 ring-blue-500"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
                       <input
-                        type='text'
-                        className='w-full px-3 py-3 text-sm transition-all duration-150 ease-linear bg-white border-0 rounded shadow placeholder-blueGray-300 text-blueGray-600 focus:outline-none focus:ring'
-                        name='contact'
-                        onChange={props.handleChange}
-                        onBlur={props.handleBlur}
-                        value={props.values.contact || ""}
+                        type="radio"
+                        name="role"
+                        value={0}
+                        onChange={() => props.setFieldValue("role", 0)}
+                        checked={Number(props.values.role) === 0}
+                        className="accent-blue-600"
                       />
-                      <span className='text-red-500 error'>
-                        <ErrorMessage name='contact' />
+                      Customer
+                    </label>
+
+                    <label
+                      className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
+                        Number(props.values.role) === 1
+                          ? "border-emerald-500 bg-emerald-50/60 text-emerald-800 ring-1 ring-emerald-500"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="role"
+                        value={1}
+                        onChange={() => props.setFieldValue("role", 1)}
+                        checked={Number(props.values.role) === 1}
+                        className="accent-emerald-600"
+                      />
+                      Administrator
+                    </label>
+                  </div>
+                  <span className="text-red-500 text-xs mt-1 block">
+                    <ErrorMessage name="role" />
+                  </span>
+                </div>
+
+                {/* Driving License KYC Status Card */}
+                <div className="mt-6 pt-5 border-t border-slate-200/80">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <IdcardOutlined className="text-emerald-600 text-base" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                        Driving License KYC
                       </span>
                     </div>
-                  </div>
-                  <div className='w-full px-3 py-3 lg:w-3/12'>
-                    <div className='relative w-full mb-3 '>
-                      <label
-                        className='block mb-2 text-xs font-bold uppercase text-blueGray-600'
-                        htmlFor='grid-password'
-                      >
-                        Image
-                      </label>
-                      <input
-                        type='file'
-                        name='fileImage'
-                        accept='image/*'
-                        className='w-full px-3 py-3 text-sm transition-all duration-150 ease-linear bg-white border-0 rounded shadow placeholder-blueGray-300 text-blueGray-600 focus:outline-none focus:ring'
-                        onChange={(event) =>
-                          onImageChange(event, props.setFieldValue)
-                        }
-                        autoComplete='off'
-                      />
-                    </div>
-                    <span className='text-red-500 error'>
-                      <ErrorMessage name='fullName' />
-                    </span>
-                  </div>
-                  <div className='px-4 lg:w-3/12'>
-                    {selectedImage ? (
-                      <div className='relative mt-4 border w-28 h-28'>
-                        <img
-                          src={selectedImage}
-                          height='80'
-                          width='80'
-                          alt='Thumb'
-                        />
-                      </div>
+                    {userData.hasLicense ? (
+                      <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200 inline-flex items-center gap-1">
+                        <CheckCircleOutlined /> Verified
+                      </span>
                     ) : (
-                      <img
-                        src={`${base_url}${userById.image}`}
-                        height='80'
-                        width='80'
-                        alt='no-image-found'
-                      />
+                      <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-200">
+                        Not Uploaded
+                      </span>
                     )}
                   </div>
-                  <div className='w-full px-3 py-3 lg:w-6/12'>
-                    <div className='relative w-full mb-3'>
-                      <label
-                        className='block mb-2 text-xs font-bold uppercase text-blueGray-600'
-                        htmlFor='grid-password'
+
+                  {userData.hasLicense ? (
+                    <div className="p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <span className="text-xs font-semibold text-emerald-950 block">
+                          Verified Driving License document on record
+                        </span>
+                        <span className="text-[11px] font-mono text-emerald-800">
+                          {userData.licenseNumber || "VERIFIED-DL"}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleViewLicense}
+                        disabled={viewingDoc}
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-60 shrink-0"
                       >
-                        Gender
-                      </label>
-                      <select
-                        className='w-full px-3 py-3 text-sm transition-all duration-150 ease-linear bg-white border-0 rounded shadow placeholder-blueGray-300 text-blueGray-600 focus:outline-none'
-                        name='gender'
-                        onChange={props.handleChange}
-                        onBlur={props.handleBlur}
-                        value={props.values.gender}
-                        autoComplete='off'
-                      >
-                        <option>Select</option>
-                        <option value='Male'>male</option>
-                        <option value='Female'>female</option>
-                        <option value='other'>Other</option>
-                      </select>
+                        {viewingDoc ? (
+                          <>
+                            <LoadingOutlined className="text-xs" />
+                            <span>Opening...</span>
+                          </>
+                        ) : (
+                          <>
+                            <EyeOutlined className="text-xs" />
+                            <span>View Document</span>
+                          </>
+                        )}
+                      </button>
                     </div>
-                    <span className='text-red-500 error'>
-                      <ErrorMessage name='gender' />
-                    </span>
-                  </div>
-                  <div className='w-full px-3 py-3 lg:w-6/12'>
-                    <div className='relative w-full mb-3'>
-                      <label
-                        className='block mb-2 text-xs font-bold uppercase text-blueGray-600'
-                        htmlFor='grid-password'
-                      >
-                        Role
-                      </label>
-                      <select
-                        className='w-full px-3 py-3 text-sm transition-all duration-150 ease-linear bg-white border-0 rounded shadow placeholder-blueGray-300 text-blueGray-600 focus:outline-none'
-                        name='role'
-                        onChange={props.handleChange}
-                        onBlur={props.handleBlur}
-                        value={props.values.role}
-                        autoComplete='off'
-                      >
-                        <option>Select</option>
-                        <option value='SuperAdmin'>SuperAdmin</option>
-                        <option value='Admin'>Admin</option>
-                        <option value='User'>User</option>
-                        <option value='Vendor'>Vendor</option>
-                      </select>
+                  ) : (
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                      This user has not uploaded any driving license document yet.
                     </div>
-                    <span className='text-red-500 error'>
-                      <ErrorMessage name='role' />
-                    </span>
-                  </div>
+                  )}
                 </div>
-                <hr className='mt-6 border-b-1 border-blueGray-300' />
-                <div className='w-full px-3 py-3 lg:w-6/12'>
-                  <div className='relative w-full mt-3 mb-3'>
-                    <button
-                      disabled={loading}
-                      type='submit'
-                      className='px-4 py-2 mr-1 text-xs font-bold text-white uppercase transition-all duration-150 ease-linear rounded shadow outline-none bg-lightBlue-500 active:bg-lightBlue-600 hover:shadow-md focus:outline-none'
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                  <button
+                    type="submit"
+                    disabled={props.isSubmitting}
+                    className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 cursor-pointer"
+                  >
+                    <SaveOutlined />
+                    {props.isSubmitting ? "Saving..." : "Save Changes"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate("/admin/users")}
+                    className="py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm rounded-xl transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+
+                  {!isSelf && (
+                    <Popconfirm
+                      title="Delete User Account"
+                      description={`Are you sure you want to permanently delete "${userData.name}" from the database? This cannot be undone.`}
+                      onConfirm={handleDelete}
+                      okText="Yes, Delete"
+                      cancelText="Cancel"
+                      okButtonProps={{ danger: true }}
                     >
-                      {loading ? <Spinner /> : "Submit"}
-                    </button>
-                  </div>
+                      <button
+                        type="button"
+                        className="py-3 px-4 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-semibold text-sm rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                      >
+                        <DeleteOutlined />
+                        Delete
+                      </button>
+                    </Popconfirm>
+                  )}
                 </div>
               </form>
             )}
           </Formik>
-        </AddEditWrapper>
-      ) : (
-        <Spinner />
-      )}
-    </>
+
+          <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+            <Link
+              to="/admin/users"
+              className="text-xs text-slate-500 hover:text-emerald-600 font-medium transition-colors"
+            >
+              ← Back to Users Directory
+            </Link>
+          </div>
+        </div>
+      </div>
+    </Layout>
   );
-}
+};
 
 export default EditUser;

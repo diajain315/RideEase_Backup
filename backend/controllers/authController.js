@@ -1149,6 +1149,75 @@ export const editUserController = async (req, res) => {
   }
 };
 
+// ✅ GET User by ID (Admin or Self)
+export const getUserByIdController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ success: false, message: "User ID is required" });
+    }
+
+    if (req.user._id.toString() !== id.toString() && req.user.role !== 1) {
+      return res.status(403).json({ success: false, message: "Unauthorized access" });
+    }
+
+    const user = await userModel.findById(id).select("-password");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const hasLicense = Boolean((user.licenseFile && user.licenseFile.data) || user.licenseNumber);
+
+    res.status(200).json({
+      success: true,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        gender: user.gender,
+        role: user.role,
+        licenseNumber: user.licenseNumber,
+        hasLicense,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Failed to fetch user", error: error.message });
+  }
+};
+
+// ✅ DELETE User by ID (Admin only)
+export const deleteUserController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ success: false, message: "User ID is required" });
+    }
+
+    // Safety check: Prevent admin from deleting themselves
+    if (req.user._id.toString() === id.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot delete your own admin account.",
+      });
+    }
+
+    const deletedUser = await userModel.findByIdAndDelete(id);
+    if (!deletedUser) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `User ${deletedUser.name || ""} deleted successfully from database.`,
+      userId: id,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Failed to delete user", error: error.message });
+  }
+};
+
 export const updateLicenseDetails = async (req, res) => {
   try {
     const { userId, licenseNumber } = req.fields || {};

@@ -9,6 +9,8 @@ import {
   verifyOtpController,
   resetPasswordController,
   editUserController,
+  getUserByIdController,
+  deleteUserController,
   updateLicenseDetails,
   verifyLicenseDocumentController,
   sendOtpController,
@@ -84,6 +86,13 @@ router.post("/verify-otp", verifyOtpController);
 router.post("/reset-Password", resetPasswordController);
 
 router.put("/edit-user", requireSignIn, editUserController);
+
+// Get User by ID
+router.get("/user/:id", requireSignIn, getUserByIdController);
+router.get("/user-by-id/:id", requireSignIn, getUserByIdController);
+
+// Delete User (Admin only)
+router.delete("/delete-user/:id", requireSignIn, isAdmin, deleteUserController);
 
 // Get '' METHOD GET
 router.get("/getallusers", requireSignIn, isAdmin, AllUsersController);
