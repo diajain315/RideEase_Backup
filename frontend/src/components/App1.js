@@ -38,6 +38,7 @@ const AboutUs = lazy(() => import("./AboutUs"));
 const Faqs = lazy(() => import("./FAQs"));
 const Terms = lazy(() => import("./Terms"));
 const Payment = lazy(() => import("./Payment"));
+const UploadLicense = lazy(() => import("./UploadLicense"));
 
 // Error Handling
 const Unauthorized = lazy(() => import("../Helper/Unauthorized"));
@@ -75,6 +76,7 @@ const App1 = () => {
             <Route path="/order/:slug" element={<Order />} />
             <Route path="/sendOtp" element={<SendOtp />} />
             <Route path="/userProfile" element={<UserProfile />} />
+            <Route path="/upload-license" element={<UploadLicense />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
 
             {/* Admin Redirections to Unified Admin Dashboard */}

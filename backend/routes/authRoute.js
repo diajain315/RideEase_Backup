@@ -15,13 +15,23 @@ import {
 } from "../controllers/authController.js";
 import { isAdmin, requireSignIn } from "../middlewares/authMiddleware.js";
 import formidable from "express-formidable";
+import userModel from "../models/userModel.js";
+
+// Middleware to parse multipart/form-data when present, allowing application/json through
+const conditionalFormidable = (req, res, next) => {
+  const contentType = (req.headers["content-type"] || "").toLowerCase();
+  if (contentType.includes("multipart/form-data")) {
+    return formidable()(req, res, next);
+  }
+  next();
+};
 
 //  router object
 const router = express.Router();
 
 // routing
 // REGISTER '' METHOD POST
-router.post("/register", registerController);
+router.post("/register", conditionalFormidable, registerController);
 
 // LOGIN '' METHOD POST
 router.post("/login", loginController);
@@ -44,7 +54,25 @@ router.post("/forgot-password", forgotPasswordController);
 router.post("/send-otp", sendOtpController);
 
 // Update license details (with automatic Driving License verification)
-router.post("/update-license", requireSignIn, formidable(), updateLicenseDetails);
+router.post("/update-license", requireSignIn, conditionalFormidable, updateLicenseDetails);
+
+// Fetch user license document/photo
+router.get("/user-license/:userId", requireSignIn, async (req, res) => {
+  try {
+    if (req.user._id.toString() !== req.params.userId.toString() && req.user.role !== 1) {
+      return res.status(403).send({ message: "Unauthorized access to document" });
+    }
+    const user = await userModel.findById(req.params.userId).select("licenseFile");
+    if (!user || !user.licenseFile || !user.licenseFile.data) {
+      return res.status(404).send({ message: "No license document found" });
+    }
+    res.set("Content-Type", user.licenseFile.contentType || "application/pdf");
+    res.set("Content-Disposition", "inline");
+    return res.status(200).send(user.licenseFile.data);
+  } catch (error) {
+    res.status(500).send({ message: "Error fetching license", error: error.message });
+  }
+});
 
 // Real-time Driving License document pre-check
 router.post("/verify-license-doc", requireSignIn, formidable(), verifyLicenseDocumentController);

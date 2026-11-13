@@ -44,6 +44,17 @@ export const makeOrderController = async (req, res) => {
   try {
     const { bikeId, totalAmt, startDate, endDate } = req.body;
 
+    // Verify user has an authentic Driving License on record
+    const user = await userModel.findById(req.user._id);
+    const hasLicense = Boolean(user && (user.licenseNumber || (user.licenseFile && user.licenseFile.data)));
+    if (!hasLicense && req.user.role !== 1) {
+      return res.status(403).send({
+        success: false,
+        requiresLicense: true,
+        message: "You must have a verified Driving License uploaded to book a vehicle.",
+      });
+    }
+
     // Validations
     if (!bikeId || !totalAmt || !startDate || !endDate) {
       return res.status(400).send({
@@ -222,9 +233,11 @@ export const razorpaySuccessController = async (req, res) => {
 
     // Verify Driving License on record
     const user = await userModel.findById(userId);
-    if (!user || !user.licenseNumber) {
+    const hasLicense = Boolean(user && (user.licenseNumber || (user.licenseFile && user.licenseFile.data)));
+    if (!hasLicense) {
       return res.status(403).send({
         success: false,
+        noLicense: true,
         message: "Cannot confirm booking without a verified Driving License on record.",
       });
     }

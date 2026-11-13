@@ -9,7 +9,13 @@ import Error from "../Helper/Error";
 import GoogleAuthButton from "./GoogleAuthButton";
 import Layout from "./Layout";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faKey, faUser, faPhone, faEnvelope, faUserPlus } from "@fortawesome/free-solid-svg-icons";
+import {
+  faKey,
+  faUser,
+  faPhone,
+  faEnvelope,
+  faUserPlus,
+} from "@fortawesome/free-solid-svg-icons";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -24,7 +30,11 @@ const Signup = () => {
   useEffect(() => {
     if (userInfo) {
       dispatch(clearFields());
-      navigate(userInfo.role === 1 ? "/admin" : "/");
+      if (userInfo.role !== 1 && !userInfo.hasLicense) {
+        navigate("/upload-license");
+      } else {
+        navigate(userInfo.role === 1 ? "/admin" : "/");
+      }
       return;
     }
     if (success) {
@@ -59,11 +69,20 @@ const Signup = () => {
             }}
             validationSchema={ValidateUser}
             onSubmit={async (values, actions) => {
-              const data = await dispatch(userRegister(values));
-              if (data.error) {
-                setErrors(data.payload);
+              const data = {
+                name: values.name,
+                email: values.email,
+                password: values.password,
+                phone: values.phone,
+                gender: values.gender,
+              };
+
+              const res = await dispatch(userRegister(data));
+              if (res.error) {
+                setErrors(res.payload);
                 dispatch(clearFields());
               }
+              actions.setSubmitting(false);
             }}
           >
             {(props) => (
@@ -248,7 +267,7 @@ const Signup = () => {
 
                 <button
                   type="submit"
-                  className="w-full py-3 px-4 mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                  className="w-full py-3 px-4 mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 cursor-pointer"
                   disabled={props.isSubmitting}
                 >
                   <FontAwesomeIcon icon={faUserPlus} />

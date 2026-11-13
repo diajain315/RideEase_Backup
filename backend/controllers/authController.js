@@ -673,7 +673,8 @@ const sendOtpEmail = async (email, otp) => {
 
 export const registerController = async (req, res) => {
   try {
-    let { name, email, password, phone, gender } = req.body;
+    const fields = req.fields || req.body || {};
+    let { name, email, password, phone, gender } = fields;
 
     if (!name || !email || !password || !phone || !gender) {
       return res.status(400).send({ success: false, message: "All fields are required" });
@@ -700,7 +701,14 @@ export const registerController = async (req, res) => {
     res.status(201).send({
       success: true,
       message: "User registered successfully",
-      user: { name: user.name, email: user.email, _id: user._id, phone: user.phone, gender: user.gender },
+      user: {
+        name: user.name,
+        email: user.email,
+        _id: user._id,
+        phone: user.phone,
+        gender: user.gender,
+        hasLicense: Boolean(user.role === 1),
+      },
     });
   } catch (error) {
     res.status(500).send({ success: false, message: "Registration error", error: error.message });
@@ -737,10 +745,23 @@ export const loginController = async (req, res) => {
       { expiresIn: "7d" }
     );
 
+    const hasLicense = Boolean((user.licenseFile && user.licenseFile.data) || user.licenseNumber);
+
     res.status(200).send({
       success: true,
       message: "Login successful",
-      user: { name: user.name, email: user.email, _id: user._id, role: user.role, gender: user.gender, phone: user.phone, avatar: user.avatar, licenseNumber: user.licenseNumber, authProvider: user.authProvider },
+      user: {
+        name: user.name,
+        email: user.email,
+        _id: user._id,
+        role: user.role,
+        gender: user.gender,
+        phone: user.phone,
+        avatar: user.avatar,
+        licenseNumber: user.licenseNumber,
+        hasLicense,
+        authProvider: user.authProvider,
+      },
       token,
       serverInstanceId: SERVER_INSTANCE_ID,
     });
@@ -840,6 +861,8 @@ export const googleLoginController = async (req, res) => {
       { expiresIn: "7d" }
     );
 
+    const hasLicense = Boolean((user.licenseFile && user.licenseFile.data) || user.licenseNumber);
+
     res.status(200).send({
       success: true,
       message: "Google login successful",
@@ -852,6 +875,7 @@ export const googleLoginController = async (req, res) => {
         phone: user.phone,
         avatar: user.avatar,
         licenseNumber: user.licenseNumber,
+        hasLicense,
         authProvider: user.authProvider,
       },
       token,
@@ -1031,6 +1055,8 @@ export const userProfileController = async (req, res) => {
       return res.status(404).send({ success: false, message: "User not found" });
     }
 
+    const hasLicense = Boolean((user.licenseFile && user.licenseFile.data) || user.licenseNumber);
+
     res.status(200).send({
       success: true,
       user: {
@@ -1042,6 +1068,7 @@ export const userProfileController = async (req, res) => {
         role: user.role,
         avatar: user.avatar,
         licenseNumber: user.licenseNumber,
+        hasLicense,
         authProvider: user.authProvider
       },
       message: "User info fetched successfully",
@@ -1127,29 +1154,31 @@ export const updateLicenseDetails = async (req, res) => {
     const { userId, licenseNumber } = req.fields || {};
     const { licenseFile } = req.files || {};
 
-    if (!userId || !licenseNumber || !licenseFile) {
-      return res.status(400).json({ success: false, message: "All fields are required" });
+    const targetUserId = userId || req.user._id;
+
+    if (!licenseFile) {
+      return res.status(400).json({ success: false, message: "License file is required" });
     }
 
-    if (req.user._id.toString() !== userId.toString() && req.user.role !== 1) {
+    if (req.user._id.toString() !== targetUserId.toString() && req.user.role !== 1) {
       return res.status(403).json({ success: false, message: "Unauthorized to update license" });
     }
 
     const fileType = licenseFile.type || licenseFile.mimetype || "";
     const allowedFileTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
     if (!allowedFileTypes.includes(fileType)) {
-      return res.status(400).json({ success: false, message: "Invalid file type. Please upload an image or PDF" });
+      return res.status(400).json({ success: false, message: "Invalid file type. Please upload a valid Driving License PDF or Image (JPG, PNG)" });
     }
 
     const filePath = licenseFile.path || licenseFile.filepath;
 
     // 🛑 STRICT VERIFICATION: Verify that uploaded document is actually a Driving License
-    const verification = await verifyDrivingLicenseDocument(filePath, fileType, licenseNumber);
+    const verification = await verifyDrivingLicenseDocument(filePath, fileType, licenseNumber || "", licenseFile.name || "");
     if (!verification.isValid) {
       return res.status(422).json({
         success: false,
         isDrivingLicense: false,
-        message: verification.reason || "Uploaded image does not appear to be an official Driving License. Please upload a clear photo of your Driving License card.",
+        message: verification.reason || "Uploaded file does not appear to be an official Driving License. Please upload a clear photo or PDF.",
       });
     }
 
@@ -1163,10 +1192,12 @@ export const updateLicenseDetails = async (req, res) => {
       };
     }
 
+    const effectiveLicenseNumber = licenseNumber || "VERIFIED-DL";
+
     const user = await userModel.findByIdAndUpdate(
-      userId,
+      targetUserId,
       {
-        licenseNumber,
+        licenseNumber: effectiveLicenseNumber,
         ...licenseData,
       },
       { new: true }
@@ -1180,7 +1211,18 @@ export const updateLicenseDetails = async (req, res) => {
       success: true,
       message: "Driving license verified and uploaded successfully",
       verification,
-      user,
+      user: {
+        name: user.name,
+        email: user.email,
+        _id: user._id,
+        role: user.role,
+        gender: user.gender,
+        phone: user.phone,
+        avatar: user.avatar,
+        licenseNumber: user.licenseNumber,
+        hasLicense: true,
+        authProvider: user.authProvider,
+      },
     });
   } catch (error) {
     res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });

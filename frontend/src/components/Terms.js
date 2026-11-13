@@ -1,32 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  Button,
   Checkbox,
-  Upload,
   message,
-  Card,
-  Typography,
-  Divider,
-  Input,
 } from "antd";
-import { UploadOutlined, CheckCircleFilled, CloseCircleFilled, LoadingOutlined } from "@ant-design/icons";
+import { CheckCircleFilled } from "@ant-design/icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faFileContract,
   faShieldHalved,
   faCreditCard,
   faIdCard,
-  faCheckCircle,
   faGasPump,
   faHelmetSafety,
-  faClock,
+  faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
-import { useDispatch, useSelector } from "react-redux";
-import { addLicense } from "../redux/features/User/authAction";
+import { useSelector } from "react-redux";
 import Http from "../Helper/Http";
-
-const { Title, Text, Paragraph } = Typography;
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
@@ -45,130 +35,57 @@ const loadRazorpayScript = () => {
 
 export default function Terms() {
   const { userInfo } = useSelector((state) => state.auth);
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [agreed, setAgreed] = useState(false);
-  const [fileList, setFileList] = useState(null);
-  const [licenseNumber, setLicenseNumber] = useState("");
-  const [licenseError, setLicenseError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [isChangingLicense, setIsChangingLicense] = useState(false);
 
-  // Check if current user already has a verified license on record
   const currentUser =
     userInfo ||
     (localStorage.getItem("userInfo")
       ? JSON.parse(localStorage.getItem("userInfo"))
       : null);
-  const hasExistingLicense = Boolean(currentUser?.licenseNumber);
-
-  // 🔍 Driving License Verification State
-  const [docVerifying, setDocVerifying] = useState(false);
-  const [docVerification, setDocVerification] = useState(null);
 
   const price = location.state?.totalAmount || 100;
 
-  const validateLicense = (license) => {
-    const clean = (license || "").trim().replace(/\s+/g, "");
-    return clean.length >= 8 && clean.length <= 18;
-  };
-
-  const beforeUpload = async (file) => {
-    const isAllowed =
-      file.type.startsWith("image/") || file.type === "application/pdf";
-    if (!isAllowed) {
-      message.error("Only image files or PDFs are allowed!");
-      return Upload.LIST_IGNORE;
+  // 🛑 Glitch fallback: Ensure user is logged in & has verified license
+  useEffect(() => {
+    if (!currentUser) {
+      message.error("Please login to proceed with booking.");
+      navigate("/login", {
+        replace: true,
+        state: { from: "/Terms", orderData: location.state },
+      });
+      return;
     }
-    setFileList(file);
-    setDocVerification(null);
 
-    // If image, trigger instant verification pre-check
-    if (file.type.startsWith("image/")) {
-      setDocVerifying(true);
-      try {
-        const testFormData = new FormData();
-        testFormData.append("licenseFile", file);
-        if (licenseNumber) {
-          testFormData.append("licenseNumber", licenseNumber);
-        }
-        const res = await Http.post("/api/v1/auth/verify-license-doc", testFormData);
-        if (res.data?.isValid) {
-          setDocVerification({
-            isValid: true,
-            message: res.data.reason || "Official Driving License document verified successfully!",
-          });
-          message.success("Driving License verified successfully!");
-        } else {
-          setDocVerification({
-            isValid: false,
-            message:
-              res.data?.reason ||
-              "Uploaded image does not appear to be an official Driving License. Please upload a clear photo of your Driving License card.",
-          });
-          message.error("Document check failed: Not a recognized Driving License!");
-        }
-      } catch (err) {
-        const errMsg =
-          err.response?.data?.message ||
-          "Could not verify document. Please ensure the image is clear and legible.";
-        setDocVerification({
-          isValid: false,
-          message: errMsg,
-        });
-        message.error(errMsg);
-      } finally {
-        setDocVerifying(false);
-      }
-    } else {
-      setDocVerification({
-        isValid: true,
-        message: "PDF document selected.",
+    if (!currentUser.hasLicense && currentUser.role !== 1) {
+      message.warning("Please upload your Driving License first to proceed.");
+      navigate("/upload-license", {
+        replace: true,
+        state: { from: "/Terms", orderData: location.state },
       });
     }
-
-    return false;
-  };
+  }, [currentUser, navigate, location.state]);
 
   const checkoutHandler = async (amount) => {
-    if (!hasExistingLicense || isChangingLicense) {
-      if (!fileList || !licenseNumber) {
-        message.error("You must enter your license number and upload a valid Driving License before paying.");
-        return;
-      }
-      if (docVerification && !docVerification.isValid) {
-        message.error("Uploaded document does not appear to be an official Driving License. Please upload a clear photo of your Driving License.");
-        return;
-      }
+    if (!currentUser) {
+      message.error("Please login to proceed with booking.");
+      navigate("/login");
+      return;
+    }
+
+    if (!currentUser.hasLicense && currentUser.role !== 1) {
+      message.warning("Driving License verification required before payment.");
+      navigate("/upload-license", {
+        state: { from: "/Terms", orderData: location.state },
+      });
+      return;
     }
 
     setSubmitting(true);
     try {
-      if (!currentUser) {
-        message.error("Please login to proceed with booking.");
-        navigate("/login");
-        return;
-      }
-
-      if (fileList && licenseNumber) {
-        const licenseData = new FormData();
-        licenseData.append("userId", currentUser._id);
-        licenseData.append("licenseNumber", licenseNumber);
-        licenseData.append("licenseFile", fileList);
-        const licenseRes = await dispatch(addLicense(licenseData));
-        if (licenseRes.error) {
-          message.error(licenseRes.payload || "Driving license verification failed.");
-          setSubmitting(false);
-          return; // 🛑 DO NOT PROCEED TO PAYMENT IF LICENSE REJECTED
-        }
-
-        // Update local session
-        const updatedUser = { ...currentUser, licenseNumber };
-        localStorage.setItem("userInfo", JSON.stringify(updatedUser));
-      }
-
       const { data: keyData } = await Http.get("/api/v1/getKey");
       const key = keyData?.key;
 
@@ -234,9 +151,15 @@ export default function Terms() {
       razor.open();
     } catch (err) {
       console.error("Payment setup error:", err.response || err);
-      message.error(
-        err.response?.data?.message || "Something went wrong. Please try again."
-      );
+      const errorMsg =
+        err.response?.data?.message || "Something went wrong. Please try again.";
+      message.error(errorMsg);
+
+      if (err.response?.data?.noLicense) {
+        navigate("/upload-license", {
+          state: { from: "/Terms", orderData: location.state },
+        });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -248,10 +171,10 @@ export default function Terms() {
         {/* Step Indicator */}
         <div className="grid grid-cols-3 gap-2 text-center text-xs font-semibold">
           <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-700 border border-emerald-500/20">
-            1. Vehicle Selected
+            1. Dates Selected
           </div>
           <div className="p-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold shadow-sm">
-            2. License & Terms
+            2. Review & Payment
           </div>
           <div className="p-2.5 rounded-xl bg-slate-100 text-slate-400">
             3. Confirmation
@@ -266,10 +189,10 @@ export default function Terms() {
               <FontAwesomeIcon icon={faFileContract} />
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Terms & License Verification
+              Review & Complete Booking
             </h1>
             <p className="text-slate-500 text-sm mt-1">
-              Please verify your driving license and accept rental conditions before proceeding to secure payment.
+              Confirm your rental conditions and proceed to secure checkout.
             </p>
           </div>
 
@@ -289,148 +212,39 @@ export default function Terms() {
             </div>
           </div>
 
-          {/* Driving License Section */}
-          <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 mb-8 space-y-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FontAwesomeIcon icon={faIdCard} className="text-emerald-600" />
-                <h2 className="text-base font-bold text-slate-900">
-                  Driver Identification & License
-                </h2>
+          {/* Driving License Verified Badge */}
+          <div className="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200 mb-8">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <CheckCircleFilled className="text-emerald-600 text-2xl shrink-0" />
+                <div>
+                  <h3 className="text-sm font-bold text-emerald-950">
+                    Verified Driving License on Account
+                  </h3>
+                  <p className="text-xs text-emerald-700 mt-0.5">
+                    Your KYC document is verified. No further documents required for checkout.
+                  </p>
+                </div>
               </div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                KYC Mandatory
+              <span className="hidden sm:inline-flex text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-full">
+                KYC Complete
               </span>
             </div>
-
-            {hasExistingLicense && !isChangingLicense ? (
-              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <CheckCircleFilled className="text-emerald-600 text-xl shrink-0" />
-                  <div>
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 block">
-                      Verified Driving License on Record
-                    </span>
-                    <span className="font-mono text-sm font-bold text-emerald-950">
-                      {currentUser.licenseNumber}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsChangingLicense(true);
-                    setLicenseNumber(currentUser.licenseNumber || "");
-                  }}
-                  className="text-xs text-emerald-700 hover:text-emerald-900 underline font-semibold cursor-pointer shrink-0"
-                >
-                  Change / Upload New
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {isChangingLicense && (
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsChangingLicense(false);
-                        setFileList(null);
-                        setDocVerification(null);
-                      }}
-                      className="text-xs text-slate-500 hover:text-slate-800 underline font-medium cursor-pointer"
-                    >
-                      Use existing license on file ({currentUser.licenseNumber})
-                    </button>
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
-                    Driving License Number *
-                  </label>
-                  <Input
-                    placeholder="e.g. RJ27-20210012345"
-                    size="large"
-                    className="rounded-xl"
-                    value={licenseNumber}
-                    onChange={(e) => {
-                      setLicenseNumber(e.target.value);
-                      setLicenseError(!validateLicense(e.target.value));
-                    }}
-                  />
-                  {licenseError && (
-                    <p className="text-xs text-rose-500 font-semibold mt-1">
-                      Please enter a valid driving license number (8–18 characters).
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
-                    Upload License Document (Photo or PDF) *
-                  </label>
-                  <Upload
-                    beforeUpload={beforeUpload}
-                    maxCount={1}
-                    accept="image/*,.pdf"
-                    className="w-full"
-                    showUploadList={false}
-                  >
-                    <button
-                      type="button"
-                      className="w-full py-3 px-4 border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl bg-white text-slate-600 font-medium text-sm flex items-center justify-center gap-2 transition cursor-pointer"
-                    >
-                      <UploadOutlined className="text-emerald-600 text-base" />
-                      <span>{fileList ? fileList.name : "Click to select Driving License file"}</span>
-                    </button>
-                  </Upload>
-
-                  {/* Real-time Document Verification Feedback */}
-                  {docVerifying && (
-                    <div className="mt-2.5 p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-800 flex items-center gap-2 font-medium">
-                      <LoadingOutlined className="text-blue-600 text-sm animate-spin" />
-                      <span>Scanning & verifying Driving License authenticity...</span>
-                    </div>
-                  )}
-
-                  {docVerification && docVerification.isValid && (
-                    <div className="mt-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-start gap-2 font-medium">
-                      <CheckCircleFilled className="text-emerald-600 text-sm mt-0.5 shrink-0" />
-                      <div>
-                        <span className="font-bold block">Document Verified:</span>
-                        <span>{docVerification.message}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {docVerification && !docVerification.isValid && (
-                    <div className="mt-2.5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start gap-2 font-medium">
-                      <CloseCircleFilled className="text-rose-600 text-sm mt-0.5 shrink-0" />
-                      <div>
-                        <span className="font-bold block">Document Check Failed:</span>
-                        <span>{docVerification.message}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Terms Checklist */}
           <div className="space-y-3 mb-8 text-xs text-slate-600 bg-slate-50/80 p-5 rounded-2xl border border-slate-100">
-            <p className="font-bold text-slate-800 text-sm">Summary of Terms:</p>
+            <p className="font-bold text-slate-800 text-sm">Summary of Rental Terms:</p>
             <ul className="space-y-1.5 list-disc pl-4">
               <li>Renter must be at least 18 years old and hold a valid motor vehicle license.</li>
               <li>Vehicles must not be driven outside authorized jurisdiction without written consent.</li>
               <li>Traffic violations and fines incurred during the rental period are the renter's liability.</li>
-              <li>Refundable security deposit is processed upon safe return inspection.</li>
+              <li>Refundable security deposit is processed upon safe vehicle return inspection.</li>
             </ul>
           </div>
 
           {/* Agreement Checkbox */}
-          <div className="mb-8 p-4 rounded-xl bg-emerald-50/60 border border-emerald-200/80">
+          <div className="mb-8 p-4 rounded-xl bg-emerald-50/40 border border-emerald-200/80">
             <Checkbox
               onChange={(e) => setAgreed(e.target.checked)}
               checked={agreed}
@@ -441,37 +255,28 @@ export default function Terms() {
           </div>
 
           {/* Payment CTA */}
-          {(() => {
-            const isLicenseReady =
-              (hasExistingLicense && !isChangingLicense) ||
-              (fileList && licenseNumber && !licenseError && (!docVerification || docVerification.isValid));
-            const isDisabled =
-              !agreed ||
-              submitting ||
-              docVerifying ||
-              !isLicenseReady ||
-              (docVerification && !docVerification.isValid);
-
-            return (
-              <button
-                type="button"
-                onClick={() => checkoutHandler(price)}
-                disabled={isDisabled}
-                className={`w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
-                  !isDisabled
-                    ? "bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/25 active:scale-95 cursor-pointer"
-                    : "bg-slate-200 text-slate-400 cursor-not-allowed"
-                }`}
-              >
+          <button
+            type="button"
+            onClick={() => checkoutHandler(price)}
+            disabled={!agreed || submitting}
+            className={`w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
+              agreed && !submitting
+                ? "bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/25 active:scale-95 cursor-pointer"
+                : "bg-slate-200 text-slate-400 cursor-not-allowed"
+            }`}
+          >
+            {submitting ? (
+              <>
+                <FontAwesomeIcon icon={faSpinner} className="animate-spin text-base" />
+                <span>Connecting to Payment Gateway...</span>
+              </>
+            ) : (
+              <>
                 <FontAwesomeIcon icon={faCreditCard} />
-                <span>
-                  {submitting
-                    ? "Connecting to Payment Gateway..."
-                    : `Proceed to Pay ₹${price}`}
-                </span>
-              </button>
-            );
-          })()}
+                <span>Proceed to Pay ₹{price}</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

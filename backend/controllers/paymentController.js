@@ -17,7 +17,8 @@ export const processPayment = async (req, res) => {
 
     // Verify user has an authentic Driving License on record
     const user = await userModel.findById(userId);
-    if (!user || !user.licenseNumber) {
+    const hasLicense = Boolean(user && (user.licenseNumber || (user.licenseFile && user.licenseFile.data)));
+    if (!hasLicense) {
       return res.status(403).json({
         success: false,
         noLicense: true,

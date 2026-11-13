@@ -9,6 +9,7 @@ import {
   getUserById,
   forgotPassword,
   sendOtp,
+  addLicense,
 } from "./authAction";
 import jwt from "jwt-decode";
 
@@ -116,7 +117,9 @@ const authSlice = createSlice({
           role: payload.user.role || 0,
           gender: payload.user.gender || "other",
           phone: payload.user.phone || "",
-          avatar: payload.user.avatar || ""
+          avatar: payload.user.avatar || "",
+          hasLicense: Boolean(payload.user.hasLicense ?? payload.user.licenseNumber),
+          licenseNumber: payload.user.licenseNumber || "",
         };
         localStorage.setItem("userInfo", JSON.stringify(userData));
       } catch (error) {
@@ -152,7 +155,9 @@ const authSlice = createSlice({
           role: payload.user.role || 0,
           gender: payload.user.gender || "other",
           phone: payload.user.phone || "",
-          avatar: payload.user.avatar || ""
+          avatar: payload.user.avatar || "",
+          hasLicense: Boolean(payload.user.hasLicense ?? payload.user.licenseNumber),
+          licenseNumber: payload.user.licenseNumber || "",
         };
         localStorage.setItem("userInfo", JSON.stringify(userData));
       } catch (error) {
@@ -235,7 +240,11 @@ const authSlice = createSlice({
         email: payload.email,
         _id: payload._id,
         role: payload.role || 0,
-        gender: payload.gender || "male"
+        gender: payload.gender || "male",
+        phone: payload.phone || "",
+        avatar: payload.avatar || "",
+        hasLicense: Boolean(payload.hasLicense ?? payload.licenseNumber),
+        licenseNumber: payload.licenseNumber || "",
       };
       localStorage.setItem("userInfo", JSON.stringify(userData));
     },
@@ -244,6 +253,38 @@ const authSlice = createSlice({
       state.error = payload;
       state.userInfo = null;
       localStorage.removeItem("userInfo");
+    },
+
+    // update driving license
+    [addLicense.pending]: (state) => {
+      state.loading = true;
+      state.error = null;
+    },
+    [addLicense.fulfilled]: (state, { payload }) => {
+      state.loading = false;
+      const updatedUser = payload?.user || payload;
+      if (updatedUser) {
+        state.userInfo = {
+          ...state.userInfo,
+          ...updatedUser,
+          hasLicense: true,
+        };
+        const existing = localStorage.getItem("userInfo")
+          ? JSON.parse(localStorage.getItem("userInfo"))
+          : {};
+        localStorage.setItem(
+          "userInfo",
+          JSON.stringify({
+            ...existing,
+            ...updatedUser,
+            hasLicense: true,
+          })
+        );
+      }
+    },
+    [addLicense.rejected]: (state, { payload }) => {
+      state.loading = false;
+      state.error = payload;
     },
 
     //all the users by id

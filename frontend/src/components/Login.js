@@ -30,7 +30,14 @@ const Login = () => {
     if (userInfo) {
       dispatch(clearFields());
       const locationState = location.state;
-      if (locationState?.from) {
+      if (userInfo.role !== 1 && !userInfo.hasLicense) {
+        navigate("/upload-license", {
+          state: {
+            from: locationState?.from || "/",
+            orderData: locationState?.orderData,
+          },
+        });
+      } else if (locationState?.from) {
         navigate(locationState.from, { state: locationState.orderData });
       } else if (userInfo.role === 1) {
         navigate("/admin");

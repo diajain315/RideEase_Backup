@@ -5,7 +5,9 @@ import userModel from "../models/userModel.js";
 // Protected route for endpoints to check whether there is token coming/valid or not
 export const requireSignIn = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    const authHeader =
+      req.headers.authorization ||
+      (req.query?.token ? `Bearer ${req.query.token}` : null);
     if (!authHeader) {
       return res.status(401).json({ success: false, message: "Unauthorized User." });
     }

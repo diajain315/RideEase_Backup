@@ -37,7 +37,8 @@ router.put("/update-status/:orderId", requireSignIn, async (req, res) => {
 
   try {
     const user = await userModel.findById(req.user._id);
-    if (!user || !user.licenseNumber) {
+    const hasLicense = Boolean(user && (user.licenseNumber || (user.licenseFile && user.licenseFile.data)));
+    if (!hasLicense) {
       return res.status(403).json({
         message: "Cannot confirm booking without a verified Driving License on record.",
       });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { Formik, ErrorMessage } from "formik";
@@ -6,8 +6,21 @@ import Error from "../Helper/Error";
 import Layout from "./Layout";
 import Loading from "./Loading";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faPhone, faEnvelope, faSave, faListCheck, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
-import { LoggedInUser, editUserById } from "../redux/features/User/authAction";
+import {
+  faUser,
+  faPhone,
+  faEnvelope,
+  faSave,
+  faListCheck,
+  faCheckCircle,
+  faIdCard,
+  faCloudArrowUp,
+  faCircleExclamation,
+  faSpinner,
+  faEye,
+} from "@fortawesome/free-solid-svg-icons";
+import { LoggedInUser, editUserById, addLicense } from "../redux/features/User/authAction";
+import Http from "../Helper/Http";
 import * as Yup from "yup";
 
 export const ValidateProfile = Yup.object().shape({
@@ -39,6 +52,14 @@ const UserProfile = () => {
     phone: "",
     gender: ""
   });
+
+  // Driving License Upload & Update State
+  const [selectedLicenseFile, setSelectedLicenseFile] = useState(null);
+  const [licenseUploading, setLicenseUploading] = useState(false);
+  const [licenseError, setLicenseError] = useState("");
+  const [licenseSuccess, setLicenseSuccess] = useState("");
+  const [viewingDoc, setViewingDoc] = useState(false);
+  const licenseInputRef = useRef(null);
 
   // Fetch user data on component mount
   useEffect(() => {
@@ -74,6 +95,16 @@ const UserProfile = () => {
     }
   }, [updateSuccess]);
 
+  // License success message timeout
+  useEffect(() => {
+    if (licenseSuccess) {
+      const timer = setTimeout(() => {
+        setLicenseSuccess("");
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [licenseSuccess]);
+
   // Handle form submission
   const handleSubmit = async (values, actions) => {
     const updateData = {
@@ -94,6 +125,98 @@ const UserProfile = () => {
       setProfileError(error?.message || "Update failed. Please try again.");
     } finally {
       actions.setSubmitting(false);
+    }
+  };
+
+  // Handle license file change
+  const handleLicenseChange = (e) => {
+    setLicenseError("");
+    setLicenseSuccess("");
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    const validExtensions = /\.(pdf|jpe?g|png|webp)$/i;
+    const validMimes = [
+      "application/pdf",
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+      "image/webp",
+    ];
+
+    if (!validMimes.includes(file.type) && !file.name.match(validExtensions)) {
+      setLicenseError("Please select a valid Driving License PDF or Image (JPG, PNG).");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setLicenseError("File size must be under 10 MB.");
+      return;
+    }
+
+    setSelectedLicenseFile(file);
+  };
+
+  // Handle license document upload/update
+  const handleLicenseUpload = async (e) => {
+    e.preventDefault();
+    if (!selectedLicenseFile) {
+      setLicenseError("Please select a file to upload.");
+      return;
+    }
+
+    try {
+      setLicenseUploading(true);
+      setLicenseError("");
+      const formData = new FormData();
+      if (userInfo?._id) {
+        formData.append("userId", userInfo._id);
+      }
+      formData.append("licenseFile", selectedLicenseFile);
+
+      const res = await dispatch(addLicense(formData));
+
+      if (res.error) {
+        setLicenseError(
+          res.payload ||
+            "Failed to verify Driving License. Please ensure you upload an authentic Driving License PDF or clear photo."
+        );
+        return;
+      }
+
+      setLicenseSuccess("Driving License updated and verified successfully!");
+      setSelectedLicenseFile(null);
+      if (licenseInputRef.current) {
+        licenseInputRef.current.value = "";
+      }
+      dispatch(LoggedInUser());
+    } catch (err) {
+      setLicenseError(err?.message || "Failed to update license.");
+    } finally {
+      setLicenseUploading(false);
+    }
+  };
+
+  // Handle viewing existing uploaded license document
+  const handleViewDocument = async () => {
+    if (!userInfo?._id) return;
+    try {
+      setViewingDoc(true);
+      setLicenseError("");
+      const res = await Http.get(`/api/v1/auth/user-license/${userInfo._id}`, {
+        responseType: "blob",
+      });
+      const contentType = res.headers["content-type"] || "application/pdf";
+      const blob = new Blob([res.data], { type: contentType });
+      const docUrl = window.URL.createObjectURL(blob);
+      window.open(docUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      setLicenseError(
+        err?.response?.data?.message ||
+          "Could not load license document. You can upload an updated document below."
+      );
+    } finally {
+      setViewingDoc(false);
     }
   };
 
@@ -258,7 +381,7 @@ const UserProfile = () => {
                 <div className="flex flex-col sm:flex-row gap-3 pt-3">
                   <button
                     type="submit"
-                    className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                    className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 cursor-pointer"
                     disabled={props.isSubmitting}
                   >
                     <FontAwesomeIcon icon={faSave} />
@@ -276,6 +399,117 @@ const UserProfile = () => {
               </form>
             )}
           </Formik>
+
+          {/* 🪪 Driving License / KYC Verification Section */}
+          <div className="mt-8 pt-6 border-t border-slate-200/80 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FontAwesomeIcon icon={faIdCard} className="text-emerald-600 text-base" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800">
+                  Driving License (KYC)
+                </h3>
+              </div>
+              {userInfo?.hasLicense ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  <FontAwesomeIcon icon={faCheckCircle} /> Verified
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-rose-800 bg-rose-100 px-2.5 py-0.5 rounded-full border border-rose-200">
+                  Action Required
+                </span>
+              )}
+            </div>
+
+            {userInfo?.hasLicense ? (
+              <div className="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <FontAwesomeIcon icon={faCheckCircle} className="text-emerald-600 text-lg shrink-0" />
+                  <div>
+                    <span className="text-xs font-bold text-emerald-950 block">
+                      Official Driving License on file
+                    </span>
+                    <span className="text-[11px] text-emerald-700">
+                      Eligible for all vehicle bookings
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleViewDocument}
+                  disabled={viewingDoc}
+                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-60 shrink-0"
+                >
+                  {viewingDoc ? (
+                    <>
+                      <FontAwesomeIcon icon={faSpinner} className="animate-spin text-xs" />
+                      <span>Opening...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FontAwesomeIcon icon={faEye} className="text-xs" />
+                      <span>View Current Document</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs font-medium text-amber-800">
+                You haven't uploaded your Driving License yet. Upload your document (PDF or Photo) to rent bikes.
+              </div>
+            )}
+
+            {licenseSuccess && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-medium flex items-center gap-2">
+                <FontAwesomeIcon icon={faCheckCircle} className="text-emerald-500" />
+                {licenseSuccess}
+              </div>
+            )}
+
+            {licenseError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-medium flex items-center gap-2">
+                <FontAwesomeIcon icon={faCircleExclamation} className="text-rose-500" />
+                {licenseError}
+              </div>
+            )}
+
+            {/* Update License Form */}
+            <form onSubmit={handleLicenseUpload} className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                  {userInfo?.hasLicense ? "Update License Document (PDF / Photo)" : "Upload License Document (PDF / Photo)"}
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    ref={licenseInputRef}
+                    type="file"
+                    accept=".pdf,image/jpeg,image/png,image/webp"
+                    onChange={handleLicenseChange}
+                    className="flex-1 text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer border border-slate-200 rounded-xl bg-slate-50/50 p-1"
+                  />
+                  <button
+                    type="submit"
+                    disabled={licenseUploading || !selectedLicenseFile}
+                    className="py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 cursor-pointer"
+                  >
+                    {licenseUploading ? (
+                      <>
+                        <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                        <span>Verifying...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FontAwesomeIcon icon={faCloudArrowUp} />
+                        <span>{userInfo?.hasLicense ? "Update Document" : "Upload Document"}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Supports DigiLocker / Parivahan PDF, JPG, PNG up to 10 MB.
+                </p>
+              </div>
+            </form>
+          </div>
 
           <div className="mt-8 pt-6 border-t border-slate-100 text-center">
             <Link 

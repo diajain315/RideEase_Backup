@@ -62,6 +62,12 @@ export default function Order() {
         replace: true,
         state: { from: `/order/${slug}` },
       });
+    } else if (currentUser && !currentUser.hasLicense && currentUser.role !== 1) {
+      antMessage.warning("Please upload your Driving License first to book a vehicle.");
+      navigate("/upload-license", {
+        replace: true,
+        state: { from: `/order/${slug}` },
+      });
     }
   }, [userInfo, userToken, navigate, slug]);
 
@@ -172,6 +178,17 @@ export default function Order() {
       return;
     }
 
+    if (!currentUser.hasLicense && currentUser.role !== 1) {
+      antMessage.warning("Please upload your Driving License first to proceed with booking.");
+      navigate("/upload-license", {
+        state: {
+          from: `/order/${slug}`,
+          orderData: { from, to, totalAmount, bikeId: bikeBySlug?._id },
+        },
+      });
+      return;
+    }
+
     try {
       setSubmittingOrder(true);
       const formData = {
@@ -185,6 +202,13 @@ export default function Order() {
 
       // 🛑 Concurrency / date conflict protection check:
       if (data.error) {
+        if (typeof data.payload === "string" && data.payload.toLowerCase().includes("license")) {
+          antMessage.warning("Please upload your Driving License first.");
+          navigate("/upload-license", {
+            state: { from: `/order/${slug}`, orderData: { from, to, totalAmount, bikeId: bikeBySlug?._id } },
+          });
+          return;
+        }
         const errorMsg =
           data.payload ||
           "This vehicle was just booked by another user for these dates! Please choose different dates.";
