@@ -116,7 +116,7 @@ const authSlice = createSlice({
           email: payload.user.email,
           _id: payload.user._id,
           role: payload.user.role || 0,
-          gender: payload.user.gender || "other",
+          gender: payload.user.gender || "",
           phone: payload.user.phone || "",
           avatar: payload.user.avatar || "",
           hasLicense: Boolean(payload.user.hasLicense ?? payload.user.licenseNumber),
@@ -154,7 +154,7 @@ const authSlice = createSlice({
           email: payload.user.email,
           _id: payload.user._id,
           role: payload.user.role || 0,
-          gender: payload.user.gender || "other",
+          gender: payload.user.gender || "",
           phone: payload.user.phone || "",
           avatar: payload.user.avatar || "",
           hasLicense: Boolean(payload.user.hasLicense ?? payload.user.licenseNumber),
@@ -241,7 +241,7 @@ const authSlice = createSlice({
         email: payload.email,
         _id: payload._id,
         role: payload.role || 0,
-        gender: payload.gender || "male",
+        gender: payload.gender || "",
         phone: payload.phone || "",
         avatar: payload.avatar || "",
         hasLicense: Boolean(payload.hasLicense ?? payload.licenseNumber),
@@ -310,6 +310,20 @@ const authSlice = createSlice({
     [editUserById.fulfilled]: (state, { payload }) => {
       state.loading = false;
       state.success = true;
+      const updated = payload?.user || payload;
+      if (updated && state.userInfo && String(state.userInfo._id) === String(updated._id)) {
+        state.userInfo = {
+          ...state.userInfo,
+          ...updated,
+        };
+        const existing = localStorage.getItem("userInfo")
+          ? JSON.parse(localStorage.getItem("userInfo"))
+          : {};
+        localStorage.setItem(
+          "userInfo",
+          JSON.stringify({ ...existing, ...updated })
+        );
+      }
     },
     [editUserById.rejected]: (state, { payload }) => {
       state.loading = false;

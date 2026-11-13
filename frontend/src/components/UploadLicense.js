@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { addLicense } from "../redux/features/User/authAction";
@@ -29,6 +29,28 @@ const UploadLicense = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (
+      userInfo &&
+      userInfo.role !== 1 &&
+      (!userInfo.phone || userInfo.phone.trim() === "" || !userInfo.gender || userInfo.gender.trim() === "")
+    ) {
+      navigate("/userProfile", {
+        replace: true,
+        state: {
+          requiredProfileCompletion: true,
+          from: location.state?.from,
+          orderData: location.state?.orderData,
+        },
+      });
+    } else if (userInfo && userInfo.role !== 1 && userInfo.hasLicense) {
+      navigate(location.state?.from || "/", {
+        replace: true,
+        state: location.state?.orderData,
+      });
+    }
+  }, [userInfo, navigate, location.state]);
 
   const validateFile = (file) => {
     if (!file) return false;

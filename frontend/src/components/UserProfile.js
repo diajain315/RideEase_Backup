@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Formik, ErrorMessage } from "formik";
 import Error from "../Helper/Error";
 import Layout from "./Layout";
@@ -43,6 +43,7 @@ export const ValidateProfile = Yup.object().shape({
 const UserProfile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { userInfo, loading } = useSelector((state) => state.auth);
   const [profileError, setProfileError] = useState("");
   const [updateSuccess, setUpdateSuccess] = useState(false);
@@ -60,6 +61,27 @@ const UserProfile = () => {
   const [licenseSuccess, setLicenseSuccess] = useState("");
   const [viewingDoc, setViewingDoc] = useState(false);
   const licenseInputRef = useRef(null);
+  const isOnboardingRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      location.state?.requiredProfileCompletion ||
+      (userInfo &&
+        userInfo.role !== 1 &&
+        (!userInfo.phone || userInfo.phone.trim() === "" || !userInfo.gender || userInfo.gender.trim() === ""))
+    ) {
+      isOnboardingRef.current = true;
+    }
+  }, [userInfo, location.state]);
+
+  const isProfileCompletion =
+    isOnboardingRef.current ||
+    Boolean(location.state?.requiredProfileCompletion) ||
+    Boolean(
+      userInfo &&
+        userInfo.role !== 1 &&
+        (!userInfo.phone || userInfo.phone.trim() === "" || !userInfo.gender || userInfo.gender.trim() === "")
+    );
 
   // Fetch user data on component mount
   useEffect(() => {
@@ -120,7 +142,34 @@ const UserProfile = () => {
       await dispatch(editUserById(data));
       setUpdateSuccess(true);
       setProfileError("");
-      dispatch(LoggedInUser());
+      const userRes = await dispatch(LoggedInUser());
+      const updatedUser = userRes?.payload?.user || userRes?.payload || userInfo;
+      const hasLicense = Boolean(
+        updatedUser?.hasLicense ??
+        updatedUser?.licenseNumber ??
+        userInfo?.hasLicense
+      );
+
+      const returnFrom = location.state?.from;
+      const orderData = location.state?.orderData;
+
+      if (isProfileCompletion) {
+        if (!hasLicense && userInfo?.role !== 1) {
+          setTimeout(() => {
+            navigate("/upload-license", {
+              state: { from: returnFrom, orderData },
+              replace: true,
+            });
+          }, 1200);
+        } else {
+          setTimeout(() => {
+            navigate(returnFrom || "/", {
+              state: orderData,
+              replace: true,
+            });
+          }, 1200);
+        }
+      }
     } catch (error) {
       setProfileError(error?.message || "Update failed. Please try again.");
     } finally {
@@ -243,13 +292,31 @@ const UserProfile = () => {
             <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
               My Profile
             </h2>
-            <p className="text-xs text-slate-500 mt-1">Manage your account details and preferences</p>
+            <p className="text-xs text-slate-500 mt-1">
+              {isProfileCompletion ? "Complete your contact details to continue" : "Manage your account details and preferences"}
+            </p>
           </div>
+
+          {isProfileCompletion && (
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs font-medium space-y-1">
+              <div className="font-bold text-amber-950 flex items-center gap-1.5 text-sm">
+                <FontAwesomeIcon icon={faCircleExclamation} className="text-amber-600" />
+                Complete Account Details
+              </div>
+              <p>
+                Please enter your 10-digit mobile number and select your gender to complete your profile before proceeding.
+              </p>
+            </div>
+          )}
 
           {updateSuccess && (
             <div className="mb-6 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-sm font-medium flex items-center gap-2">
               <FontAwesomeIcon icon={faCheckCircle} className="text-emerald-500" />
-              Profile updated successfully!
+              {isProfileCompletion
+                ? (!userInfo?.hasLicense && userInfo?.role !== 1
+                  ? "Profile details saved! Proceeding to Driving License verification..."
+                  : "Profile updated successfully! Redirecting...")
+                : "Profile updated successfully!"}
             </div>
           )}
 
@@ -385,131 +452,139 @@ const UserProfile = () => {
                     disabled={props.isSubmitting}
                   >
                     <FontAwesomeIcon icon={faSave} />
-                    {props.isSubmitting ? "Updating..." : "Save Changes"}
+                    {props.isSubmitting
+                      ? "Saving..."
+                      : isProfileCompletion
+                      ? "Save & Continue"
+                      : "Save Changes"}
                   </button>
                   
-                  <Link
-                    to="/orderdropdown"
-                    className="flex-1 py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-700 shadow-md transition-all flex items-center justify-center gap-2"
-                  >
-                    <FontAwesomeIcon icon={faListCheck} />
-                    My Bookings
-                  </Link>
+                  {!isProfileCompletion && (
+                    <Link
+                      to="/orderdropdown"
+                      className="flex-1 py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-700 shadow-md transition-all flex items-center justify-center gap-2"
+                    >
+                      <FontAwesomeIcon icon={faListCheck} />
+                      My Bookings
+                    </Link>
+                  )}
                 </div>
               </form>
             )}
           </Formik>
 
-          {/* 🪪 Driving License / KYC Verification Section */}
-          <div className="mt-8 pt-6 border-t border-slate-200/80 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FontAwesomeIcon icon={faIdCard} className="text-emerald-600 text-base" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800">
-                  Driving License (KYC)
-                </h3>
-              </div>
-              {userInfo?.hasLicense ? (
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  <FontAwesomeIcon icon={faCheckCircle} /> Verified
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-rose-800 bg-rose-100 px-2.5 py-0.5 rounded-full border border-rose-200">
-                  Action Required
-                </span>
-              )}
-            </div>
-
-            {userInfo?.hasLicense ? (
-              <div className="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <FontAwesomeIcon icon={faCheckCircle} className="text-emerald-600 text-lg shrink-0" />
-                  <div>
-                    <span className="text-xs font-bold text-emerald-950 block">
-                      Official Driving License on file
-                    </span>
-                    <span className="text-[11px] text-emerald-700">
-                      Eligible for all vehicle bookings
-                    </span>
-                  </div>
+          {/* 🪪 Driving License / KYC Verification Section (Hidden during profile completion) */}
+          {!isProfileCompletion && (
+            <div className="mt-8 pt-6 border-t border-slate-200/80 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FontAwesomeIcon icon={faIdCard} className="text-emerald-600 text-base" />
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800">
+                    Driving License (KYC)
+                  </h3>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleViewDocument}
-                  disabled={viewingDoc}
-                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-60 shrink-0"
-                >
-                  {viewingDoc ? (
-                    <>
-                      <FontAwesomeIcon icon={faSpinner} className="animate-spin text-xs" />
-                      <span>Opening...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FontAwesomeIcon icon={faEye} className="text-xs" />
-                      <span>View Current Document</span>
-                    </>
-                  )}
-                </button>
+                {userInfo?.hasLicense ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    <FontAwesomeIcon icon={faCheckCircle} /> Verified
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-rose-800 bg-rose-100 px-2.5 py-0.5 rounded-full border border-rose-200">
+                    Action Required
+                  </span>
+                )}
               </div>
-            ) : (
-              <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs font-medium text-amber-800">
-                You haven't uploaded your Driving License yet. Upload your document (PDF or Photo) to rent bikes.
-              </div>
-            )}
 
-            {licenseSuccess && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-medium flex items-center gap-2">
-                <FontAwesomeIcon icon={faCheckCircle} className="text-emerald-500" />
-                {licenseSuccess}
-              </div>
-            )}
-
-            {licenseError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-medium flex items-center gap-2">
-                <FontAwesomeIcon icon={faCircleExclamation} className="text-rose-500" />
-                {licenseError}
-              </div>
-            )}
-
-            {/* Update License Form */}
-            <form onSubmit={handleLicenseUpload} className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
-                  {userInfo?.hasLicense ? "Update License Document (PDF / Photo)" : "Upload License Document (PDF / Photo)"}
-                </label>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    ref={licenseInputRef}
-                    type="file"
-                    accept=".pdf,image/jpeg,image/png,image/webp"
-                    onChange={handleLicenseChange}
-                    className="flex-1 text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer border border-slate-200 rounded-xl bg-slate-50/50 p-1"
-                  />
+              {userInfo?.hasLicense ? (
+                <div className="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <FontAwesomeIcon icon={faCheckCircle} className="text-emerald-600 text-lg shrink-0" />
+                    <div>
+                      <span className="text-xs font-bold text-emerald-950 block">
+                        Official Driving License on file
+                      </span>
+                      <span className="text-[11px] text-emerald-700">
+                        Eligible for all vehicle bookings
+                      </span>
+                    </div>
+                  </div>
                   <button
-                    type="submit"
-                    disabled={licenseUploading || !selectedLicenseFile}
-                    className="py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 cursor-pointer"
+                    type="button"
+                    onClick={handleViewDocument}
+                    disabled={viewingDoc}
+                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-60 shrink-0"
                   >
-                    {licenseUploading ? (
+                    {viewingDoc ? (
                       <>
-                        <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
-                        <span>Verifying...</span>
+                        <FontAwesomeIcon icon={faSpinner} className="animate-spin text-xs" />
+                        <span>Opening...</span>
                       </>
                     ) : (
                       <>
-                        <FontAwesomeIcon icon={faCloudArrowUp} />
-                        <span>{userInfo?.hasLicense ? "Update Document" : "Upload Document"}</span>
+                        <FontAwesomeIcon icon={faEye} className="text-xs" />
+                        <span>View Current Document</span>
                       </>
                     )}
                   </button>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Supports DigiLocker / Parivahan PDF, JPG, PNG up to 10 MB.
-                </p>
-              </div>
-            </form>
-          </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs font-medium text-amber-800">
+                  You haven't uploaded your Driving License yet. Upload your document (PDF or Photo) to rent bikes.
+                </div>
+              )}
+
+              {licenseSuccess && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-medium flex items-center gap-2">
+                  <FontAwesomeIcon icon={faCheckCircle} className="text-emerald-500" />
+                  {licenseSuccess}
+                </div>
+              )}
+
+              {licenseError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-medium flex items-center gap-2">
+                  <FontAwesomeIcon icon={faCircleExclamation} className="text-rose-500" />
+                  {licenseError}
+                </div>
+              )}
+
+              {/* Update License Form */}
+              <form onSubmit={handleLicenseUpload} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                    {userInfo?.hasLicense ? "Update License Document (PDF / Photo)" : "Upload License Document (PDF / Photo)"}
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      ref={licenseInputRef}
+                      type="file"
+                      accept=".pdf,image/jpeg,image/png,image/webp"
+                      onChange={handleLicenseChange}
+                      className="flex-1 text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer border border-slate-200 rounded-xl bg-slate-50/50 p-1"
+                    />
+                    <button
+                      type="submit"
+                      disabled={licenseUploading || !selectedLicenseFile}
+                      className="py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 cursor-pointer"
+                    >
+                      {licenseUploading ? (
+                        <>
+                          <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                          <span>Verifying...</span>
+                        </>
+                      ) : (
+                        <>
+                          <FontAwesomeIcon icon={faCloudArrowUp} />
+                          <span>{userInfo?.hasLicense ? "Update Document" : "Upload Document"}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Supports DigiLocker / Parivahan PDF, JPG, PNG up to 10 MB.
+                  </p>
+                </div>
+              </form>
+            </div>
+          )}
 
           <div className="mt-8 pt-6 border-t border-slate-100 text-center">
             <Link 

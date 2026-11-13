@@ -30,7 +30,15 @@ const Signup = () => {
   useEffect(() => {
     if (userInfo) {
       dispatch(clearFields());
-      if (userInfo.role !== 1 && !userInfo.hasLicense) {
+      const isProfileIncomplete =
+        userInfo.role !== 1 &&
+        (!userInfo.phone || userInfo.phone.trim() === "" || !userInfo.gender || userInfo.gender.trim() === "");
+
+      if (isProfileIncomplete) {
+        navigate("/userProfile", {
+          state: { requiredProfileCompletion: true },
+        });
+      } else if (userInfo.role !== 1 && !userInfo.hasLicense) {
         navigate("/upload-license");
       } else {
         navigate(userInfo.role === 1 ? "/admin" : "/");

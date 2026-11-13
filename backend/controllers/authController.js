@@ -851,7 +851,7 @@ export const googleLoginController = async (req, res) => {
         authProvider: "google",
         avatar: googleUser.avatar,
         phone: "",
-        gender: "other",
+        gender: "",
       }).save();
     }
 

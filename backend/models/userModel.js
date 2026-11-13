@@ -35,8 +35,8 @@ const userSchema = new mongoose.Schema(
       required: function () {
         return this.authProvider !== "google";
       },
-      enum: ["male", "female", "other"],
-      default: "other",
+      enum: ["male", "female", "other", ""],
+      default: "",
     },
     googleId: {
       type: String,

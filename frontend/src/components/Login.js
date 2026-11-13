@@ -30,7 +30,19 @@ const Login = () => {
     if (userInfo) {
       dispatch(clearFields());
       const locationState = location.state;
-      if (userInfo.role !== 1 && !userInfo.hasLicense) {
+      const isProfileIncomplete =
+        userInfo.role !== 1 &&
+        (!userInfo.phone || userInfo.phone.trim() === "" || !userInfo.gender || userInfo.gender.trim() === "");
+
+      if (isProfileIncomplete) {
+        navigate("/userProfile", {
+          state: {
+            requiredProfileCompletion: true,
+            from: locationState?.from || "/",
+            orderData: locationState?.orderData,
+          },
+        });
+      } else if (userInfo.role !== 1 && !userInfo.hasLicense) {
         navigate("/upload-license", {
           state: {
             from: locationState?.from || "/",
