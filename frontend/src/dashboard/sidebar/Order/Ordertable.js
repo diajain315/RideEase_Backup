@@ -69,8 +69,18 @@ const Ordertable = () => {
     ];
 
     const rows = localOrders.map((order, index) => {
-      const startDate = order?.startDate ? moment(order.startDate).format("YYYY-MM-DD") : "";
-      const endDate = order?.endDate ? moment(order.endDate).format("YYYY-MM-DD") : "";
+      const formattedStartDate =
+        order?.startDate && moment(order.startDate).isValid()
+          ? moment(order.startDate).format("DD/MM/YYYY")
+          : (order?.startDate || "");
+      const formattedEndDate =
+        order?.endDate && moment(order.endDate).isValid()
+          ? moment(order.endDate).format("DD/MM/YYYY")
+          : (order?.endDate || "");
+
+      // Force Excel text evaluation so narrow columns never trigger the Date '########' overflow
+      const startDate = formattedStartDate ? `="${formattedStartDate}"` : "";
+      const endDate = formattedEndDate ? `="${formattedEndDate}"` : "";
 
       return [
         index + 1,
@@ -84,29 +94,31 @@ const Ordertable = () => {
       ];
     });
 
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [headers, ...rows]
-        .map((row) =>
-          row
-            .map((cell) => {
-              let text = String(cell).replace(/"/g, '""');
-              if (text.includes(",") || text.includes('"')) {
-                text = `"${text}"`;
-              }
-              return text;
-            })
-            .join(",")
-        )
-        .join("\n");
+    const csvString = [headers, ...rows]
+      .map((row) =>
+        row
+          .map((cell) => {
+            const str = cell === null || cell === undefined ? "" : String(cell);
+            if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
+              return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+          })
+          .join(",")
+      )
+      .join("\r\n");
 
-    const encodedUri = encodeURI(csvContent);
+    const blob = new Blob(["\uFEFF" + csvString], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.href = url;
     link.setAttribute("download", `RideEase_Orders_${moment().format("YYYYMMDD")}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const columns = [
