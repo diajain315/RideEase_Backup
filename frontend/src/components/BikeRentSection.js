@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { BikeAll, FilterBikes } from "../redux/features/Bikes/bikeAction";
 import { CategoryAll } from "../redux/features/Category/categoryAction";
@@ -29,10 +29,29 @@ export default function BikeRentSection() {
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const dispatch = useDispatch();
+  const { userInfo, userToken } = useSelector((state) => state.auth);
   const hasMounted = useRef(false);
   const base_url = process.env.REACT_APP_API_URL || "http://localhost:5001";
+
+  const handleRentClick = (bikeSlug) => {
+    const token = userToken || localStorage.getItem("userToken");
+    const currentUser =
+      userInfo ||
+      (localStorage.getItem("userInfo")
+        ? JSON.parse(localStorage.getItem("userInfo"))
+        : null);
+
+    if (!token && !currentUser) {
+      navigate("/login", {
+        state: { from: `/order/${bikeSlug}` },
+      });
+    } else {
+      navigate(`/order/${bikeSlug}`);
+    }
+  };
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -398,13 +417,14 @@ export default function BikeRentSection() {
                             ₹{bike.price}
                           </p>
                         </div>
-                        <Link
-                          to={`/order/${bike.slug}`}
-                          className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 px-4 py-2.5 text-xs font-bold text-slate-950 uppercase tracking-wider shadow-md shadow-emerald-500/20 transition-all active:scale-95"
+                        <button
+                          type="button"
+                          onClick={() => handleRentClick(bike.slug)}
+                          className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 px-4 py-2.5 text-xs font-bold text-slate-950 uppercase tracking-wider shadow-md shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
                         >
                           <span>Rent Now</span>
                           <FontAwesomeIcon icon={faArrowRight} className="text-xs" />
-                        </Link>
+                        </button>
                       </div>
                     </div>
                   </div>

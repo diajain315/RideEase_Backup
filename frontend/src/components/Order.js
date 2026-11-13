@@ -47,7 +47,23 @@ export default function Order() {
   const base_url = process.env.REACT_APP_API_URL || "http://localhost:5001";
 
   const { bikeBySlug } = useSelector((state) => state.bike);
-  const { userInfo } = useSelector((state) => state.auth);
+  const { userInfo, userToken } = useSelector((state) => state.auth);
+
+  useEffect(() => {
+    const token = userToken || localStorage.getItem("userToken");
+    const currentUser =
+      userInfo ||
+      (localStorage.getItem("userInfo")
+        ? JSON.parse(localStorage.getItem("userInfo"))
+        : null);
+
+    if (!token && !currentUser) {
+      navigate("/login", {
+        replace: true,
+        state: { from: `/order/${slug}` },
+      });
+    }
+  }, [userInfo, userToken, navigate, slug]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });

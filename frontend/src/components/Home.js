@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { BikeAll } from "../redux/features/Bikes/bikeAction";
 import Categories from "./Categories";
@@ -24,6 +24,7 @@ import {
 
 const Home = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const base_url = process.env.REACT_APP_API_URL || "http://localhost:5001";
 
   useEffect(() => {
@@ -32,8 +33,26 @@ const Home = () => {
   }, [dispatch]);
 
   const { bikes = [] } = useSelector((state) => state.bike);
+  const { userInfo, userToken } = useSelector((state) => state.auth);
   // Show top 3 featured bikes on home
   const featuredBikes = bikes?.slice(0, 3) || [];
+
+  const handleRentClick = (bikeSlug) => {
+    const token = userToken || localStorage.getItem("userToken");
+    const currentUser =
+      userInfo ||
+      (localStorage.getItem("userInfo")
+        ? JSON.parse(localStorage.getItem("userInfo"))
+        : null);
+
+    if (!token && !currentUser) {
+      navigate("/login", {
+        state: { from: `/order/${bikeSlug}` },
+      });
+    } else {
+      navigate(`/order/${bikeSlug}`);
+    }
+  };
 
   return (
     <Layout title="RideEase : Bike & Scooter Rentals in Udaipur">
@@ -172,13 +191,14 @@ const Home = () => {
                         </span>
                       </div>
 
-                      <Link
-                        to={`/order/${bike.slug}`}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all active:scale-95"
+                      <button
+                        type="button"
+                        onClick={() => handleRentClick(bike.slug)}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all active:scale-95 cursor-pointer"
                       >
                         <span>Rent Now</span>
                         <FontAwesomeIcon icon={faArrowRight} className="text-xs" />
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </div>
