@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Table, Select, Tag, Spin, Empty } from "antd";
-import { DownloadOutlined, ArrowLeftOutlined, ShoppingCartOutlined } from "@ant-design/icons";
+import { Table, Select, Tag, Spin, Empty, Button } from "antd";
+import { DownloadOutlined, ArrowLeftOutlined, ShoppingCartOutlined, EyeOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { AllOrder, updateStatus } from "../../../redux/features/Order/orderAction";
 import toast from "react-hot-toast";
 import moment from "moment";
 import Layout from "../../../components/Layout";
+import Http from "../../../Helper/Http";
 import {
   RENTAL_STATUS_OPTIONS,
   RENTAL_STATUS_COLORS,
@@ -19,7 +20,27 @@ const Ordertable = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [localOrders, setLocalOrders] = useState([]);
+  const [loadingDocId, setLoadingDocId] = useState(null);
   const { loading, error } = useSelector((state) => state.order);
+
+  // Handle viewing a specific user's license document
+  const handleShowLicense = async (userId) => {
+    if (!userId) return;
+    try {
+      setLoadingDocId(userId);
+      const res = await Http.get(`/api/v1/auth/user-license/${userId}`, {
+        responseType: "blob",
+      });
+      const contentType = res.headers["content-type"] || "application/pdf";
+      const blob = new Blob([res.data], { type: contentType });
+      const docUrl = window.URL.createObjectURL(blob);
+      window.open(docUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "No license document found for this user.");
+    } finally {
+      setLoadingDocId(null);
+    }
+  };
 
   useEffect(() => {
     dispatch(AllOrder()).then((res) => {
@@ -62,6 +83,7 @@ const Ordertable = () => {
       "Bike Name",
       "Bike Number",
       "Rented User",
+      "Driver License",
       "Total Amount",
       "Start Date",
       "End Date",
@@ -86,7 +108,8 @@ const Ordertable = () => {
         index + 1,
         order?.bikes?.name || "",
         order?.bikes?.number || "",
-        order?.renter?.name || "",
+        order?.renter?.name || "N/A",
+        order?.renter ? (order?.renter?.hasLicense ? "Verified" : "Not Uploaded") : "N/A",
         order?.totalAmt || "",
         startDate,
         endDate,
@@ -146,6 +169,37 @@ const Ordertable = () => {
       dataIndex: ["renter", "name"],
       key: "renter",
       render: (name) => <span className="font-medium text-slate-800 text-xs sm:text-sm">{name || "N/A"}</span>,
+    },
+    {
+      title: "Driver License",
+      key: "license",
+      align: "center",
+      render: (_, record) => {
+        const renter = record?.renter;
+        const renterId = renter?._id || (typeof renter === "string" ? renter : null);
+        if (!renter || !renterId || !renter?.name) {
+          return <span className="text-xs text-slate-400 font-medium">N/A</span>;
+        }
+
+        const hasLicense = renter.hasLicense || Boolean(renter.licenseNumber);
+        if (hasLicense) {
+          return (
+            <Button
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => handleShowLicense(renterId)}
+              loading={loadingDocId === renterId}
+              className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-300 rounded-lg text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
+            >
+              Show
+            </Button>
+          );
+        }
+
+        return (
+          <span className="text-xs text-slate-400 font-medium">Not Uploaded</span>
+        );
+      },
     },
     {
       title: "Tariff Total",

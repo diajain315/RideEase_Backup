@@ -147,13 +147,44 @@ export const AllOrdersController = async (req, res) => {
     const orders = await orderModel
       .find({ status: { $nin: PENDING_CHECKOUT_STATUSES } })
       .populate("bikes", "-photo")
-      .populate("renter", "name")
+      .populate("renter", "name email phone licenseNumber")
       .sort({ createdAt: -1 });
+
+    const renterIds = orders
+      .map((o) => o.renter?._id)
+      .filter((id) => Boolean(id));
+
+    // Find users who have either licenseFile.data or licenseNumber
+    let licenseUserSet = new Set();
+    if (renterIds.length > 0) {
+      const usersWithLicense = await userModel
+        .find(
+          {
+            _id: { $in: renterIds },
+            $or: [
+              { "licenseFile.data": { $exists: true, $ne: null } },
+              { licenseNumber: { $exists: true, $ne: "" } },
+            ],
+          },
+          "_id"
+        )
+        .lean();
+
+      licenseUserSet = new Set(usersWithLicense.map((u) => u._id.toString()));
+    }
+
+    const ordersWithLicenseInfo = orders.map((order) => {
+      const orderObj = order.toObject();
+      if (orderObj.renter) {
+        orderObj.renter.hasLicense = licenseUserSet.has(orderObj.renter._id.toString());
+      }
+      return orderObj;
+    });
 
     res.status(200).send({
       success: true,
       message: "Fetched all orders successfully",
-      orders,
+      orders: ordersWithLicenseInfo,
     });
   } catch (error) {
     res.status(500).send({
