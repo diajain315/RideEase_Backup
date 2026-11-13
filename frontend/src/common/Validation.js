@@ -78,3 +78,11 @@ export const ValidateCategoryAdd = Yup.object().shape({
     .min(2, "Category name must be at least 2 characters long.")
     .max(50, "Category name cannot be longer than 50 characters."),
 });
+
+export const ValidateCategoryEdit = Yup.object().shape({
+  name: Yup.string()
+    .required("Category name is required")
+    .min(2, "Category name must be at least 2 characters long.")
+    .max(50, "Category name cannot be longer than 50 characters."),
+  photo: Yup.mixed().nullable().notRequired(),
+});

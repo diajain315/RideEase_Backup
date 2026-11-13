@@ -13,6 +13,15 @@ import formidable from "express-formidable";
 
 const router = express.Router();
 
+// Middleware to parse multipart/form-data when present, allowing application/json through
+const conditionalFormidable = (req, res, next) => {
+  const contentType = (req.headers["content-type"] || "").toLowerCase();
+  if (contentType.includes("multipart/form-data")) {
+    return formidable()(req, res, next);
+  }
+  next();
+};
+
 // routes
 
 // create-category
@@ -30,6 +39,7 @@ router.put(
   "/update-category/:_id",
   requireSignIn,
   isAdmin,
+  conditionalFormidable,
   updateCategoryController
 );
 

@@ -81,8 +81,10 @@ const App1 = () => {
             <Route path='/users' element={<Navigate to="/admin/users" replace />} />
             <Route path='/category' element={<Navigate to="/admin/category" replace />} />
             <Route path='/category/add' element={<Navigate to="/admin/category/add" replace />} />
+            <Route path='/category/edit/:id' element={<Private><EditCategory /></Private>} />
             <Route path='/bikes' element={<Navigate to="/admin/bikes" replace />} />
             <Route path='/bikes/add' element={<Navigate to="/admin/bikes/add" replace />} />
+            <Route path='/bikes/edit/:id' element={<Private><EditBike /></Private>} />
             <Route path='/userorders' element={<Navigate to="/admin/orders" replace />} />
             <Route path="/AdminMessages" element={<Navigate to="/admin/messages" replace />} />
 

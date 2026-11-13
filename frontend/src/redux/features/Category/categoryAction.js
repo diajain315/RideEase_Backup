@@ -70,9 +70,14 @@ export const editCategoryById = createAsyncThunk(
   "category/edit",
   async (item, { rejectWithValue }) => {
     try {
+      const categoryId =
+        item?.id ||
+        item?._id ||
+        (item instanceof FormData ? item.get("_id") : null);
+      const payload = item?.formData || item?.formdata || item;
       const data = await Http.put(
-        `/api/v1/category/update-category/${item._id}`,
-        item
+        `/api/v1/category/update-category/${categoryId}`,
+        payload
       );
       return data.data;
     } catch (error) {
