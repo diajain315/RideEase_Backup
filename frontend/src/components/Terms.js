@@ -40,6 +40,23 @@ export default function Terms() {
 
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancelHold = async () => {
+    const orderId = location.state?.orderId;
+    if (orderId) {
+      try {
+        setCancelling(true);
+        await Http.delete(`/api/v1/order/cancel-hold/${orderId}`);
+        message.success("Booking hold cancelled and dates unlocked.");
+      } catch (e) {
+        console.warn("Could not cancel hold:", e);
+      } finally {
+        setCancelling(false);
+      }
+    }
+    navigate(-1);
+  };
 
   const currentUser =
     userInfo ||
@@ -277,6 +294,19 @@ export default function Terms() {
               </>
             )}
           </button>
+
+          {/* Cancel & Release Hold Action */}
+          <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>Hold active for 15 mins</span>
+            <button
+              type="button"
+              disabled={cancelling || submitting}
+              onClick={handleCancelHold}
+              className="text-rose-600 hover:text-rose-700 font-semibold inline-flex items-center gap-1 cursor-pointer hover:underline disabled:opacity-50"
+            >
+              <span>{cancelling ? "Releasing dates..." : "Cancel Booking & Unlock Dates"}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

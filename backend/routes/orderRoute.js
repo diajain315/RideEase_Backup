@@ -7,6 +7,7 @@ import {
   updateStatusController,
   razorpaySuccessController,
   getBikeBookedSlotsController,
+  cancelHoldController,
 } from "../controllers/orderController.js";
 import BikeOrder from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
@@ -15,6 +16,9 @@ const router = express.Router();
 
 // 🔒 Get booked / locked date slots for a specific vehicle (public/user)
 router.get("/bike-booked-slots/:bikeId", getBikeBookedSlotsController);
+
+// 🗑️ Cancel active checkout hold
+router.delete("/cancel-hold/:orderId", requireSignIn, cancelHoldController);
 
 // 📦 Place Order
 router.post("/make-order", requireSignIn, makeOrderController);

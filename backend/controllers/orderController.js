@@ -4,6 +4,7 @@ import orderModel, {
   ACTIVE_LOCKING_STATUSES,
 } from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
+import JWT from "jsonwebtoken";
 
 // 🔒 Get all booked/locked date slots for a specific vehicle
 export const getBikeBookedSlotsController = async (req, res) => {
@@ -12,9 +13,26 @@ export const getBikeBookedSlotsController = async (req, res) => {
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
     const checkoutExpiryTime = new Date(Date.now() - 15 * 60 * 1000); // 15 mins ago
 
+    // Attempt to extract logged in user id if token is provided
+    let currentUserId = null;
+    try {
+      const authHeader = req.headers.authorization;
+      if (authHeader) {
+        const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
+        if (token) {
+          const decode = JWT.verify(token, process.env.JWT_SECRET);
+          if (decode?._id) {
+            currentUserId = decode._id.toString();
+          }
+        }
+      }
+    } catch (_) {
+      // Unauthenticated check is fine for public availability
+    }
+
     // Active booked slots:
-    // 1. Confirmed orders (Processing, Shipped, Delivered) where endDate >= today
-    // 2. In-progress checkouts (Not Processed) created within last 15 minutes where endDate >= today
+    // 1. Confirmed orders where endDate >= today
+    // 2. In-progress checkouts created within last 15 minutes where endDate >= today
     const bookedOrders = await orderModel
       .find({
         bikes: bikeId,
@@ -24,16 +42,93 @@ export const getBikeBookedSlotsController = async (req, res) => {
           { status: { $in: PENDING_CHECKOUT_STATUSES }, createdAt: { $gte: checkoutExpiryTime } },
         ],
       })
-      .select("startDate endDate status");
+      .select("startDate endDate status renter totalAmt createdAt");
+
+    const slots = bookedOrders.map((order) => {
+      const isPendingHold = PENDING_CHECKOUT_STATUSES.includes(order.status);
+      const isOwnHold = Boolean(
+        currentUserId &&
+          isPendingHold &&
+          order.renter &&
+          order.renter.toString() === currentUserId
+      );
+
+      const holdExpiresAt = isPendingHold
+        ? new Date(new Date(order.createdAt).getTime() + 15 * 60 * 1000).toISOString()
+        : null;
+
+      return {
+        _id: order._id,
+        startDate: order.startDate,
+        endDate: order.endDate,
+        status: order.status,
+        totalAmt: order.totalAmt,
+        createdAt: order.createdAt,
+        isOwnHold,
+        holdExpiresAt,
+      };
+    });
 
     res.status(200).send({
       success: true,
-      bookedSlots: bookedOrders,
+      bookedSlots: slots,
     });
   } catch (error) {
     res.status(500).send({
       success: false,
       message: "Failed to fetch vehicle availability slots",
+      error: error.message,
+    });
+  }
+};
+
+// 🗑️ Cancel / Release temporary checkout hold early
+export const cancelHoldController = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user?._id;
+
+    if (!orderId) {
+      return res.status(400).send({
+        success: false,
+        message: "Order ID is required to cancel hold",
+      });
+    }
+
+    const order = await orderModel.findById(orderId);
+    if (!order) {
+      return res.status(404).send({
+        success: false,
+        message: "Booking hold not found or already released",
+      });
+    }
+
+    // Ensure only the renter or admin can cancel an unconfirmed checkout hold
+    if (order.renter?.toString() !== userId?.toString() && req.user?.role !== 1) {
+      return res.status(403).send({
+        success: false,
+        message: "Unauthorized to cancel this hold",
+      });
+    }
+
+    // Only allow cancelling unconfirmed hold orders (not confirmed / paid bookings)
+    if (!PENDING_CHECKOUT_STATUSES.includes(order.status)) {
+      return res.status(400).send({
+        success: false,
+        message: "Only unconfirmed checkout holds can be released.",
+      });
+    }
+
+    await orderModel.findByIdAndDelete(orderId);
+
+    res.status(200).send({
+      success: true,
+      message: "Booking hold released and dates unlocked successfully",
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: "Something went wrong while releasing booking hold",
       error: error.message,
     });
   }
@@ -87,6 +182,25 @@ export const makeOrderController = async (req, res) => {
     });
 
     if (conflictingOrder) {
+      const isPendingHold = PENDING_CHECKOUT_STATUSES.includes(conflictingOrder.status);
+      const isOwnHold = isPendingHold && conflictingOrder.renter?.toString() === req.user._id.toString();
+
+      if (isOwnHold) {
+        // Reuse & update the user's own active hold order
+        conflictingOrder.totalAmt = totalAmt;
+        conflictingOrder.startDate = startDate;
+        conflictingOrder.endDate = endDate;
+        conflictingOrder.createdAt = new Date();
+        await conflictingOrder.save();
+
+        return res.status(200).send({
+          success: true,
+          message: "Existing checkout hold resumed and updated successfully",
+          order: conflictingOrder,
+        });
+      }
+
+      // Conflict belongs to another user or confirmed booking
       return res.status(409).send({
         success: false,
         alreadyBooked: true,

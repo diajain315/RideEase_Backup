@@ -24,6 +24,7 @@ import {
   faShieldHalved,
   faArrowRight,
   faCheck,
+  faCircleXmark,
 } from "@fortawesome/free-solid-svg-icons";
 
 const { RangePicker } = DatePicker;
@@ -107,15 +108,53 @@ export default function Order() {
     }
   }, [days, bikeBySlug]);
 
+  const [cancellingHold, setCancellingHold] = useState(false);
+
+  // Distinguish between the current user's own active hold and other users' bookings
+  const ownHold = bookedSlots.find((slot) => slot.isOwnHold);
+  const otherUsersSlots = bookedSlots.filter((slot) => !slot.isOwnHold);
+
+  const handleCancelHold = async (orderId) => {
+    if (!orderId) return;
+    try {
+      setCancellingHold(true);
+      await Http.delete(`/api/v1/order/cancel-hold/${orderId}`);
+      antMessage.success("Booking hold released. Dates are now unlocked!");
+      setFrom(null);
+      setTo(null);
+      setDays(0);
+      if (bikeBySlug?._id) {
+        fetchBookedSlots(bikeBySlug._id);
+      }
+    } catch (err) {
+      antMessage.error(err.response?.data?.message || "Failed to cancel hold.");
+    } finally {
+      setCancellingHold(false);
+    }
+  };
+
+  const handleResumePayment = (hold) => {
+    if (!hold) return;
+    navigate("/Terms", {
+      state: {
+        from: hold.startDate,
+        to: hold.endDate,
+        totalAmount: hold.totalAmt || (days * bikeBySlug?.price),
+        bikeId: bikeBySlug?._id,
+        orderId: hold._id,
+      },
+    });
+  };
+
   // 🛑 Strict check to disable past dates AND any dates already booked by others
   const disabledDate = (current) => {
     if (!current) return false;
     // 1. Disable past dates
     if (current < moment().startOf("day")) return true;
 
-    // 2. Disable dates where this vehicle is already booked and locked
+    // 2. Disable dates where this vehicle is already booked and locked by other users
     const currentStr = current.format("YYYY-MM-DD");
-    const isBooked = bookedSlots.some(
+    const isBooked = otherUsersSlots.some(
       (slot) => currentStr >= slot.startDate && currentStr <= slot.endDate
     );
     return isBooked;
@@ -132,8 +171,8 @@ export default function Order() {
     const startStr = start.format("YYYY-MM-DD");
     const endStr = end.format("YYYY-MM-DD");
 
-    // 🛑 Concurrency check: Ensure no booked dates fall inside the selected range
-    const conflict = bookedSlots.find(
+    // 🛑 Concurrency check: Ensure no booked dates of OTHER users fall inside the selected range
+    const conflict = otherUsersSlots.find(
       (slot) => startStr <= slot.endDate && endStr >= slot.startDate
     );
 
@@ -341,17 +380,60 @@ export default function Order() {
                 </div>
 
                 {/* 🔒 Live Availability & Locked Dates Notice */}
-                {bookedSlots.length > 0 ? (
+                {ownHold && (
+                  <div className="mb-6 p-4 rounded-2xl bg-cyan-50 border-2 border-cyan-300 text-xs text-cyan-950 shadow-sm">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="font-bold flex items-center gap-1.5 text-cyan-900 text-xs uppercase tracking-wider">
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-600"></span>
+                        </span>
+                        Your Active Booking Hold
+                      </div>
+                      <span className="text-[11px] font-mono font-bold text-cyan-800 bg-cyan-100 px-2 py-0.5 rounded-lg border border-cyan-200">
+                        Reserved for you
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-cyan-800 mb-3 leading-relaxed">
+                      You have an in-progress booking for <strong>{moment(ownHold.startDate).format("DD MMM YYYY")} – {moment(ownHold.endDate).format("DD MMM YYYY")}</strong>. 
+                      You can complete your payment now or release these dates.
+                    </p>
+
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleResumePayment(ownHold)}
+                        className="flex-1 py-2.5 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <span>Resume Payment</span>
+                        <FontAwesomeIcon icon={faArrowRight} className="text-[10px]" />
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={cancellingHold}
+                        onClick={() => handleCancelHold(ownHold._id)}
+                        className="py-2.5 px-3.5 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 hover:border-rose-300 font-semibold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+                      >
+                        <FontAwesomeIcon icon={faCircleXmark} className="text-xs" />
+                        <span>{cancellingHold ? "Releasing..." : "Cancel & Change Dates"}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {otherUsersSlots.length > 0 && (
                   <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
                     <div className="font-bold flex items-center gap-1.5 mb-1.5 text-amber-800 text-xs uppercase tracking-wider">
                       <LockOutlined className="text-amber-600 text-sm" />
-                      Locked Dates for this Vehicle ({bookedSlots.length} active booking{bookedSlots.length > 1 ? "s" : ""})
+                      Locked Dates for this Vehicle ({otherUsersSlots.length} active booking{otherUsersSlots.length > 1 ? "s" : ""})
                     </div>
                     <p className="text-[11px] text-amber-700 mb-2 leading-relaxed">
                       This vehicle is already rented on the dates below. These dates are <strong>locked on the calendar</strong> and cannot be booked by any other user:
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {bookedSlots.map((slot, idx) => (
+                      {otherUsersSlots.map((slot, idx) => (
                         <span
                           key={idx}
                           className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white text-amber-900 font-semibold text-xs border border-amber-300 shadow-xs"
@@ -362,7 +444,9 @@ export default function Order() {
                       ))}
                     </div>
                   </div>
-                ) : (
+                )}
+
+                {!ownHold && otherUsersSlots.length === 0 && (
                   <div className="mb-6 p-3 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2">
                     <CheckCircleOutlined className="text-emerald-600 text-sm shrink-0" />
                     <span>
